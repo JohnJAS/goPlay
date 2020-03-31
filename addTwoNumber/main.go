@@ -1,4 +1,4 @@
-package addTwoNumber
+package addtwonumber
 
 import "fmt"
 
