@@ -7,13 +7,16 @@ type ListNode struct {
 	Next *ListNode
 }
 
-func listLength(l ListNode) int {
-	var num int
-	for l.Next != nil {
-		l = *l.Next
-		num++
+func (l ListNode) listLength() (num int) {
+	if &l == nil {
+		num = 0
+	}else{
+		num = 1
+		for l.Next != nil {
+			l = *l.Next
+			num++
+		}
 	}
-	num++
 	return num
 }
 
@@ -22,8 +25,8 @@ func calculate(val1 int, val2 int, more int) (int, int) {
 }
 
 func addTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
-	len1 := listLength(*l1)
-	len2 := listLength(*l2)
+	len1 := l1.listLength()
+	len2 := l2.listLength()
 
 	if len1 < len2 {
 		l1, l2 = l2, l1
@@ -75,7 +78,7 @@ func main() {
 
 	result := addTwoNumbers(l1, l2)
 
-	length := listLength(*result)
+	length := result.listLength()
 
 	for i := 0; i < length; i++ {
 
