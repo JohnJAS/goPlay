@@ -1,0 +1,357 @@
+[
+    {
+        "targetVersion" : "201902",
+        "fromVersion" : "201811",
+        "majorRelease" : "true",
+        "versionless" : "false",
+        "steps" : 
+        [
+            {   
+                "order" : "1",
+                "action" : "singleMaster",
+                "description" : "Upgrade -g Session on first master node",
+                "command" : "upgrade.sh -g",
+                "args" : 
+                [
+                    {
+                        "option" : "--logging-server",
+                        "type" : "mandatory",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "Please specify the NFS server for logging."
+                    },
+                    {
+                        "option" : "--logging-path",
+                        "type" : "mandatory",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "Please specify the NFS path for logging."
+                    }
+                ]
+            },
+            {   
+                "order" : "2",
+                "action" : "allMasters",
+                "description" : "Upgrade -l Session on all master nodes",
+                "command" : "upgrade.sh -l"
+            },
+            {   
+                "order" : "3",
+                "action" : "allWorkers",
+                "description" : "Upgrade -l Session on all worker nodes",
+                "command" : "upgrade.sh -l"
+            },
+            {   
+                "order" : "4",
+                "action" : "allMasters",
+                "description" : "Upgrade -u Session on all master nodes",
+                "command" : "upgrade.sh -u -y -t /tmp"
+            },
+            {   
+                "order" : "5",
+                "action" : "allWorkers",
+                "description" : "Upgrade -u Session on all worker nodes",
+                "command" : "upgrade.sh -u -y -t /tmp"
+            },
+            {   
+                "order" : "6",
+                "action" : "allNodes",
+                "description" : "Upgrade -c Session on all nodes",
+                "command" : "upgrade.sh -c"
+            },
+            {   
+                "order" : "7",
+                "action" : "singleMaster",
+                "description" : "Check CDF status",
+                "command" : "bin/kube-status.sh"
+            }
+        ]
+    },
+    {
+        "targetVersion": "201905",
+        "fromVersion": "201902",
+        "majorRelease" : "true",
+        "versionless" : "false",
+        "commandCheck" : 
+        [
+            {
+                "name" : "htpasswd",
+                "action" : "allMasters"
+            }
+        ],
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "singleMaster",
+                "description": "Upgrade -g Session on first master node",
+                "command": "upgrade.sh -g -y",
+                "args" : 
+                [
+                    {
+                        "option" : "--logging-server",
+                        "type" : "mandatory",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "Please specify the NFS server for logging."
+                    },
+                    {
+                        "option" : "--logging-path",
+                        "type" : "mandatory",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "Please specify the NFS path for logging."
+                    },
+                    {
+                        "option" : "--registry-ca",
+                        "type" : "optional",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "This option is to specify external registry's CA for cdf-apiserver."
+                    }
+                ]
+            },
+            {
+                "order": "2",
+                "action": "allMasters",
+                "description": "Upgrade -l Session on all master nodes",
+                "command": "upgrade.sh -l -y"
+            },
+            {
+                "order": "3",
+                "action": "allWorkers",
+                "description": "Upgrade -l Session on all worker nodes",
+                "command": "upgrade.sh -l -y"
+            },
+            {
+                "order": "4",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "5",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "6",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u"
+            },
+            {
+                "order": "7",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            },
+            {
+                "order": "8",
+                "action": "singleMaster",
+                "description": "Check CDF status",
+                "command": "bin/kube-status.sh"
+            }
+        ]
+    },
+    {
+        "targetVersion": "201908",
+        "fromVersion": "201905",
+        "majorRelease" : "true",
+        "versionless" : "false",
+        "commandCheck" : 
+        [
+            {
+                "name" : "socat",
+                "action" : "allNodes"
+            },
+            {
+                "name" : "htpasswd",
+                "action" : "allMasters"
+            }
+        ],
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "2",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "3",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u"
+            },
+            {
+                "order": "4",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            },
+            {
+                "order": "5",
+                "action": "singleMaster",
+                "description": "Check CDF status",
+                "command": "cdf/bin/kube-status.sh"
+            }
+        ]
+    },
+    {
+        "targetVersion": "201911",
+        "fromVersion": "201908",
+        "majorRelease" : "false",
+        "versionless" : "true",
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "2",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "3",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u -y"
+            },
+            {
+                "order": "4",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            }
+        ]
+    },
+    {
+        "targetVersion": "202002",
+        "fromVersion": "201908,201911",
+        "majorRelease" : "false",
+        "versionless" : "true",
+        "rpmPkgCheck" : 
+        [
+            {
+                "name" : "container-selinux",
+                "version" : "2.74",
+                "action" : "allNodes"
+            }
+        ],
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "2",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp",
+                "args" : 
+                [
+                    {
+                        "option" : "--drain",
+                        "type" : "optional",
+                        "nullable" : "true",
+                        "value" : "",
+                        "description" : "Drain the node before upgrade -i session."
+                    },
+                    {
+                        "option" : "--drain-timeout",
+                        "type" : "optional",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "The length of time to drain current node. Default value is 3600 seconds."
+                    }
+                ]
+            },
+            {
+                "order": "3",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u -y"
+            },
+            {
+                "order": "4",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            }
+        ]
+    },
+    {
+        "targetVersion": "202005",
+        "fromVersion": "201908,201911,202002",
+        "majorRelease" : "false",
+        "versionless" : "true",
+        "rpmPkgCheck" : 
+        [
+            {
+                "name" : "container-selinux",
+                "version" : "2.74",
+                "action" : "allNodes"
+            }
+        ],
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "2",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp",
+                "args" : 
+                [
+                    {
+                        "option" : "--drain",
+                        "type" : "optional",
+                        "nullable" : "true",
+                        "value" : "",
+                        "description" : "Drain the node before upgrade -i session."
+                    },
+                    {
+                        "option" : "--drain-timeout",
+                        "type" : "optional",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "The length of time to drain current node. Default value is 3600 seconds."
+                    }
+                ]
+            },
+            {
+                "order": "3",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u -y"
+            },
+            {
+                "order": "4",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            }
+        ]
+    }
+]
