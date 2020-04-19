@@ -20,28 +20,20 @@ type employee struct {
 
 func createQuery(q interface{}) {
 	if reflect.ValueOf(q).Kind() == reflect.Struct {
-		t := reflect.TypeOf(q).Name()
-		query := fmt.Sprintf("insert into %s ", t)
-		v := reflect.ValueOf(q)
-		for i := 0; i < v.NumField(); i++ {
-			switch v.Field(i).Kind() {
-			case reflect.Int:
-				if i == 0 {
-					query = fmt.Sprintf("%s%s", query, reflect.TypeOf(v.Field(i)).Name())
-				} else {
-					query = fmt.Sprintf("%s, %s", query, reflect.TypeOf(v.Field(i)).Name())
-				}
-			case reflect.String:
-				if i == 0 {
-					query = fmt.Sprintf("%s\"%s\"", query, reflect.TypeOf(v.Field(i)).Name())
-				} else {
-					query = fmt.Sprintf("%s, \"%s\"", query, reflect.TypeOf(v.Field(i)).Name())
-				}
-			default:
-				fmt.Println("Unsupported type")
-				return
+		t := reflect.TypeOf(q)
+
+		s := t.Name() + "("
+
+		for i:= 0; i < t.NumField() ; i++{
+			if i == t.NumField() - 1 {
+				s = s + t.Field(i).Name + ")"
+			}else{
+				s = s + t.Field(i).Name + ","
 			}
 		}
+
+		query := fmt.Sprintf("insert into %s values(", s)
+		v := reflect.ValueOf(q)
 		for i := 0; i < v.NumField(); i++ {
 			switch v.Field(i).Kind() {
 			case reflect.Int:
@@ -70,12 +62,8 @@ func createQuery(q interface{}) {
 }
 
 func main() {
-	o1 := order{}
-
-	createQuery(o1)
-
 	o := order{
-		ordId:      0,
+		ordId:      456,
 		customerId: 56,
 	}
 	createQuery(o)
