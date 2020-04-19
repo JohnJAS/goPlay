@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	data, err := ioutil.ReadFile("./autoUpgrade.json")
+	data, err := ioutil.ReadFile("./fileOperator/autoUpgrade.json")
 	if err != nil {
 		fmt.Println("File reading error", err)
 		return
