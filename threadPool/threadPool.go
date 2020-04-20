@@ -31,19 +31,19 @@ func digits(number int) int {
 	return sum
 }
 func worker(wg *sync.WaitGroup) {
-	for job := range jobs {
+	for job := range jobs { //监听jobs channel, 如果jobs没有关闭会阻塞,jobs关闭时推出循环
 		output := Result{job, digits(job.randomno)}
 		results <- output
 	}
-	wg.Done()
+	wg.Done() //waitGroup计数器 - 1
 }
 func createWorkerPool(noOfWorkers int) {
-	var wg sync.WaitGroup
+	var wg sync.WaitGroup //新建一个waitGroup
 	for i := 0; i < noOfWorkers; i++ {
-		wg.Add(1)
-		go worker(&wg)
+		wg.Add(1)      //waitGroup计数器 + 1
+		go worker(&wg) //启动一个worker routine
 	}
-	wg.Wait()
+	wg.Wait() //等待计数器变为0
 	close(results)
 }
 func allocate(noOfJobs int) {
@@ -55,7 +55,7 @@ func allocate(noOfJobs int) {
 	close(jobs)
 }
 func result(done chan bool) {
-	for result := range results {
+	for result := range results { //监听results channel, 直到results channel关闭, 推出循环
 		fmt.Printf("Job id %d, input random no %d , sum of digits %d\n", result.job.id, result.job.randomno, result.sumofdigits)
 	}
 	done <- true
@@ -68,7 +68,7 @@ func main() {
 	go result(done)
 	noOfWorkers := 20
 	createWorkerPool(noOfWorkers)
-	<-done
+	<-done //阻塞，除非done channel接收到值true, 否则程序不会进行下去
 	endTime := time.Now()
 	diff := endTime.Sub(startTime)
 	fmt.Println("total time taken ", diff.Seconds(), "seconds")
