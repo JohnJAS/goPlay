@@ -20,7 +20,7 @@ func main() {
 	//fmt.Println("value of fpath is", *fptr)
 
 	//still have question why binary file wasn't generated
-	box := packr.NewBox("../testBox")
+	box := packr.NewBox(".")
 	json, err := box.FindString("autoUpgrade.json")
 	if err != nil {
 		log.Fatal(err)
