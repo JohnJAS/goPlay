@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"log"
-
-	"github.com/gobuffalo/packr"
+	"os"
 )
 
 func main() {
@@ -15,15 +16,33 @@ func main() {
 	//}
 	//fmt.Println("Contents of file:", string(data))
 	//
-	//fptr := flag.String("fpath", "fileOperator/autoUpgrade.json", "file path to read from")
-	//flag.Parse()
-	//fmt.Println("value of fpath is", *fptr)
 
-	//still have question why binary file wasn't generated
-	box := packr.NewBox(".")
-	json, err := box.FindString("autoUpgrade.json")
+	fptr := flag.String("fpath", "autoUpgrade.json", "file path to read from")
+	flag.Parse()
+
+	f, err := os.Open(*fptr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Contents of file:", json)
+	defer func() {
+		if err = f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		fmt.Println(s.Text())
+	}
+	err = s.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//********still have question why binary file wasn't generated*************
+	// box := packr.NewBox(".")
+	// json, err := box.FindString("autoUpgrade.json")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("Contents of file:", json)
 }
