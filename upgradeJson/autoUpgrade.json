@@ -4,14 +4,14 @@
         "fromVersion" : "201811",
         "majorRelease" : "true",
         "versionless" : "false",
-        "steps" : 
+        "steps" :
         [
-            {   
+            {
                 "order" : "1",
                 "action" : "singleMaster",
                 "description" : "Upgrade -g Session on first master node",
                 "command" : "upgrade.sh -g",
-                "args" : 
+                "args" :
                 [
                     {
                         "option" : "--logging-server",
@@ -29,37 +29,37 @@
                     }
                 ]
             },
-            {   
+            {
                 "order" : "2",
                 "action" : "allMasters",
                 "description" : "Upgrade -l Session on all master nodes",
                 "command" : "upgrade.sh -l"
             },
-            {   
+            {
                 "order" : "3",
                 "action" : "allWorkers",
                 "description" : "Upgrade -l Session on all worker nodes",
                 "command" : "upgrade.sh -l"
             },
-            {   
+            {
                 "order" : "4",
                 "action" : "allMasters",
                 "description" : "Upgrade -u Session on all master nodes",
                 "command" : "upgrade.sh -u -y -t /tmp"
             },
-            {   
+            {
                 "order" : "5",
                 "action" : "allWorkers",
                 "description" : "Upgrade -u Session on all worker nodes",
                 "command" : "upgrade.sh -u -y -t /tmp"
             },
-            {   
+            {
                 "order" : "6",
                 "action" : "allNodes",
                 "description" : "Upgrade -c Session on all nodes",
                 "command" : "upgrade.sh -c"
             },
-            {   
+            {
                 "order" : "7",
                 "action" : "singleMaster",
                 "description" : "Check CDF status",
@@ -72,21 +72,21 @@
         "fromVersion": "201902",
         "majorRelease" : "true",
         "versionless" : "false",
-        "commandCheck" : 
+        "commandCheck" :
         [
             {
                 "name" : "htpasswd",
                 "action" : "allMasters"
             }
         ],
-        "steps": 
+        "steps":
         [
             {
                 "order": "1",
                 "action": "singleMaster",
                 "description": "Upgrade -g Session on first master node",
                 "command": "upgrade.sh -g -y",
-                "args" : 
+                "args" :
                 [
                     {
                         "option" : "--logging-server",
@@ -160,7 +160,7 @@
         "fromVersion": "201905",
         "majorRelease" : "true",
         "versionless" : "false",
-        "commandCheck" : 
+        "commandCheck" :
         [
             {
                 "name" : "socat",
@@ -171,7 +171,7 @@
                 "action" : "allMasters"
             }
         ],
-        "steps": 
+        "steps":
         [
             {
                 "order": "1",
@@ -210,7 +210,7 @@
         "fromVersion": "201908",
         "majorRelease" : "false",
         "versionless" : "true",
-        "steps": 
+        "steps":
         [
             {
                 "order": "1",
@@ -243,7 +243,7 @@
         "fromVersion": "201908,201911",
         "majorRelease" : "false",
         "versionless" : "true",
-        "rpmPkgCheck" : 
+        "rpmPkgCheck" :
         [
             {
                 "name" : "container-selinux",
@@ -251,7 +251,7 @@
                 "action" : "allNodes"
             }
         ],
-        "steps": 
+        "steps":
         [
             {
                 "order": "1",
@@ -264,7 +264,7 @@
                 "action": "allWorkers",
                 "description": "Upgrade -i Session on all worker nodes",
                 "command": "upgrade.sh -i -y -t /tmp",
-                "args" : 
+                "args" :
                 [
                     {
                         "option" : "--drain",
@@ -301,7 +301,7 @@
         "fromVersion": "201908,201911,202002",
         "majorRelease" : "false",
         "versionless" : "true",
-        "rpmPkgCheck" : 
+        "rpmPkgCheck" :
         [
             {
                 "name" : "container-selinux",
@@ -309,7 +309,7 @@
                 "action" : "allNodes"
             }
         ],
-        "steps": 
+        "steps":
         [
             {
                 "order": "1",
@@ -322,7 +322,7 @@
                 "action": "allWorkers",
                 "description": "Upgrade -i Session on all worker nodes",
                 "command": "upgrade.sh -i -y -t /tmp",
-                "args" : 
+                "args" :
                 [
                     {
                         "option" : "--drain",
