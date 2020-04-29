@@ -2,12 +2,24 @@ package main
 
 import (
 	"fmt"
+	. "autoUpgrade/common"
 )
 
-func init() {
+var TempFolder string
 
+func init() {
+	//TempFolder is the temp folder of autoUpgrade
+	if SysType == "windows" {
+		TempFolder = "C:\tmp\autoUpgrade"
+	} else {
+		TempFolder = "/tmp/autoUpgrade"
+	}
 }
 
 func main() {
 	fmt.Println("autoUpgrade.sh transfer to autoUpgrade.go...")
+
+	fmt.Println(SysType)
+	fmt.Println(TempFolder)
+	fmt.Println(UpgradeLog)
 }
