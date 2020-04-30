@@ -10,7 +10,7 @@ var TempFolder string
 func init() {
 	//TempFolder is the temp folder of autoUpgrade
 	if SysType == "windows" {
-		TempFolder = "C:\tmp\autoUpgrade"
+		TempFolder = "C:\\tmp\\autoUpgrade"
 	} else {
 		TempFolder = "/tmp/autoUpgrade"
 	}
