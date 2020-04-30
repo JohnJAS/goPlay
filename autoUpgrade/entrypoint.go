@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	. "autoUpgrade/common"
+	"fmt"
 )
 
 var TempFolder string
