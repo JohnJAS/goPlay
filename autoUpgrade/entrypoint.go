@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	. "autoUpgrade/common"
 	"github.com/urfave/cli/v2"
@@ -13,17 +14,17 @@ import (
 var TempFolder string
 //UpgradeLog is log folder of autoUpgrade
 var UpgradeLog string
-
-var LogFile string
+//LogFile is autoUpgrade logfile path
+var LogFilePath string
 
 func init() {
 	if SysType == "windows" {
-		TempFolder = "C:\\tmp\\autoUpgrade"
+		TempFolder = filepath.Join(os.Getenv("TEMP"),"autoUpgrade")
 	} else {
 		TempFolder = "/tmp/autoUpgrade"
 	}
 
-	UpgradeLog = "upgradeLog"
+	LogFilePath = filepath.Join(TempFolder,"upgradeLog")
 }
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 
 	fmt.Println(SysType)
 	fmt.Println(TempFolder)
-	fmt.Println(UpgradeLog)
+	fmt.Println(LogFilePath)
 
 	app := &cli.App{
 		Name: "greet",
