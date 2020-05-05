@@ -9,16 +9,21 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+//TempFolder is autoUpgrade temp folder including re-run mark and auto upgrade log
 var TempFolder string
+//UpgradeLog is log folder of autoUpgrade
+var UpgradeLog string
+
 var LogFile string
 
 func init() {
-	//TempFolder is the temp folder of autoUpgrade
 	if SysType == "windows" {
 		TempFolder = "C:\\tmp\\autoUpgrade"
 	} else {
 		TempFolder = "/tmp/autoUpgrade"
 	}
+
+	UpgradeLog = "upgradeLog"
 }
 
 func main() {
