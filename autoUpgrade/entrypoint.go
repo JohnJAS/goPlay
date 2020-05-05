@@ -19,7 +19,7 @@ var LogFilePath string
 
 func init() {
 	if SysType == "windows" {
-		TempFolder = os.Getenv("TEMP1")
+		TempFolder = os.Getenv("TEMP")
 		if TempFolder == "" {
 			log.Fatal("Failed to find system env TEMP, initailization failed.")
 		}
