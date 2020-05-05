@@ -19,7 +19,11 @@ var LogFilePath string
 
 func init() {
 	if SysType == "windows" {
-		TempFolder = filepath.Join(os.Getenv("TEMP"),"autoUpgrade")
+		TempFolder = os.Getenv("TEMP1")
+		if TempFolder == "" {
+			log.Fatal("Failed to find system env TEMP, initailization failed.")
+		}
+		TempFolder = filepath.Join(TempFolder,"autoUpgrade")
 	} else {
 		TempFolder = "/tmp/autoUpgrade"
 	}
