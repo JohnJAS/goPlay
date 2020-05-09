@@ -81,9 +81,10 @@ func main() {
 	}
 
 	err := app.Run(os.Args)
-	fmt.Println(WORK_DIR)
-	fmt.Println(NODE_IN_CLUSTER)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(WORK_DIR)
+	fmt.Println(NODE_IN_CLUSTER)
+
 }
