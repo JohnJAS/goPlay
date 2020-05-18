@@ -57,17 +57,19 @@ func init() {
 	}
 
 	//create log file
-	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.RFC3339)+".log")
+	LogFilePath = filepath.Join(TempFolder, "upgradeLog")
 	exist, err := cdfOSUtil.PathExists(LogFilePath)
 	if err != nil {
-		log.Fatalln(err)
-	} else if exist == false {
-		err = os.Mkdir("LogFilePath", 0666)
+		log.Println(err)
+	}
+	if exist == false {
+		fmt.Println(LogFilePath)
+		err = os.MkdirAll(LogFilePath, 0666)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
-	LogFile, err = os.Create(LogFilePath)
+	LogFile, err = os.Create(filepath.Join(LogFilePath,"autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log"))
 	defer LogFile.Close()
 	if err != nil {
 		log.Fatalln(err)
