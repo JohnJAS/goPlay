@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/urfave/cli/v2"
 
 	cdfOSUtil "autoUpgrade/cdfutil/os"
 	cdfCommon "autoUpgrade/common"
@@ -44,6 +43,7 @@ var WORK_DIR string
 var DRY_RUN bool
 
 func init() {
+	var err error
 
 	//identify system OS
 	if cdfCommon.SysType == "windows" {
@@ -57,20 +57,15 @@ func init() {
 	}
 
 	//create log file
-	LogFilePath = filepath.Join(TempFolder, "upgradeLog")
-	exist, err := cdfOSUtil.PathExists(LogFilePath)
-	if err != nil {
-		log.Println(err)
-	}
-	if exist == false {
-		fmt.Println(LogFilePath)
-		err = os.MkdirAll(LogFilePath, 0666)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	LogFile, err = os.Create(filepath.Join(LogFilePath,"autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log"))
+	LogFilePath = filepath.Join(TempFolder, "upgradeLog","autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log")
+	LogFile, err = cdfOSUtil.CreateFile(LogFilePath)
 	defer LogFile.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	//get current directory
+	CURRENT_DIR, err = os.Getwd()
 	if err != nil {
 		log.Fatalln(err)
 	}
