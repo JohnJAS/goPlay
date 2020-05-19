@@ -17,6 +17,19 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
+//CreateFolder
+func CreateFolder(path string) error {
+	folder := filepath.Dir(path)
+	exist, _ := PathExists(folder)
+	if exist == false {
+		err := os.MkdirAll(folder, 0666)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 //CreateFile
 func CreateFile(path string) (*os.File, error) {
 	folder := filepath.Dir(path)

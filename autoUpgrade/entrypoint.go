@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
-	cdfOSUtil "autoUpgrade/cdfutil/os"
+	"github.com/urfave/cli/v2"
+
+	cdfLog "autoUpgrade/cdfutil/log"
+	cdfOS "autoUpgrade/cdfutil/os"
 	cdfCommon "autoUpgrade/common"
 )
 
@@ -23,6 +26,9 @@ var LogFilePath string
 
 //LogFile is autoUpgrade logfile
 var LogFile *os.File
+
+//Logger instance of log
+var Logger *log.Logger
 
 //CURRENT_DIR:
 var CURRENT_DIR string
@@ -57,8 +63,8 @@ func init() {
 	}
 
 	//create log file
-	LogFilePath = filepath.Join(TempFolder, "upgradeLog","autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log")
-	LogFile, err = cdfOSUtil.CreateFile(LogFilePath)
+	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log")
+	LogFile, err = cdfOS.CreateFile(LogFilePath)
 	defer LogFile.Close()
 	if err != nil {
 		log.Fatalln(err)
@@ -69,6 +75,18 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	fmt.Println(log.Ldate)
+	fmt.Println(log.Ltime)
+	fmt.Println(log.Lmicroseconds)
+	fmt.Println(log.Llongfile)
+	fmt.Println(log.Lshortfile)
+	fmt.Println(log.LUTC)
+	fmt.Println(log.LstdFlags)
+
+	Logger = log.New(LogFile, "", 0)
+
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory: "+CURRENT_DIR)
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
 
 }
 

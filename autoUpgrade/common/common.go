@@ -7,6 +7,14 @@ import (
 //SysType is the value of windows or linux or others
 const SysType = runtime.GOOS
 
+//Log
+const (
+	DEBUG = "DEBUG"
+	INFO  = "INFO"
+	WARN  = "WARN"
+	FATAL = "FATAL"
+)
+
 //Time Format
 const (
 	ANSIC       = "Mon Jan _2 15:04:05 2006"
@@ -20,9 +28,8 @@ const (
 	RFC3339     = "2006-01-02T15:04:05Z07:00"
 	RFC3339Nano = "2006-01-02T15:04:05.999999999Z07:00"
 	Kitchen     = "3:04PM"
-	// Handy time stamps.
-	Stamp      = "Jan _2 15:04:05"
-	StampMilli = "Jan _2 15:04:05.000"
-	StampMicro = "Jan _2 15:04:05.000000"
-	StampNano  = "Jan _2 15:04:05.000000000"
+	Stamp       = "Jan _2 15:04:05" // Handy time stamps.
+	StampMilli  = "Jan _2 15:04:05.000"
+	StampMicro  = "Jan _2 15:04:05.000000"
+	StampNano   = "Jan _2 15:04:05.000000000"
 )
