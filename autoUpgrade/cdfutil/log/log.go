@@ -1,32 +1,30 @@
 package log
 
 import (
-	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	cdfCommon "autoUpgrade/common"
 )
 
-func WriteLog(logger *log.Logger, level string, msg string) {
+func WriteLog(logger *log.Logger, level string, msg string, filePath ...string) {
 	timeStamp := time.Now().UTC().Format(time.RFC3339Nano)
+	log.SetFlags(0)
 	logger.SetPrefix(timeStamp + " " + level + " ")
 
-	switch timeStamp {
+	switch level {
 
 	case cdfCommon.DEBUG:
-		log.SetOutput(ioutil.Discard)
-		logger.SetOutput(ioutil.Discard)
 		logger.Println(msg)
 	case cdfCommon.FATAL:
 		log.Println(msg)
-		log.Println("The CDF autoUpgrade log file is ")
+		log.Println("The CDF autoUpgrade log file is "+strings.Join(filePath,""))
 		logger.Println(msg)
 		logger.SetPrefix(timeStamp + " " + cdfCommon.INFO + " ")
-		logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is ")
+		logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is "+strings.Join(filePath,""))
 	default:
 		log.Println(msg)
 		logger.Println(msg)
-
 	}
 }

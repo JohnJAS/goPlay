@@ -78,6 +78,13 @@ func init() {
 }
 
 func main() {
+	//DEBUG_MODE
+	//os.Args = append(os.Args, "-n")
+	//os.Args = append(os.Args,"1.2.3.4")
+	//os.Args = append(os.Args, "-d")
+	//os.Args = append(os.Args, "./dir")
+	startLog()
+
 	app := &cli.App{
 		Name:            "autoUpgrade",
 		Usage:           "Upgrade CDF automatically.",
@@ -90,7 +97,7 @@ func main() {
 				Aliases:     []string{"dir"},
 				Required:    true,
 				Destination: &WORK_DIR,
-				Usage:       "The working directory to use on all cluster nodes. ENSURE the directory is empty and the file system as enough space. If you are a non-root user on the nodes inside the cluster, make sure you have permission to this directory.(mandatory)",
+				Usage:       "The working directory to use on all cluster nodes. ENSURE the directory is empty and the file system has enough space. If you are a non-root user on the nodes inside the cluster, make sure you have permission to this directory.(mandatory)",
 			},
 			&cli.StringFlag{
 				Name:        "n",
@@ -118,22 +125,25 @@ func main() {
 		},
 		Action: startExec,
 	}
-
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
+//autoUpgrade main process
 func startExec(c *cli.Context) error {
-	var err error
-
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
 			DRY_RUN = true
 		}
 	}
 
+	return nil
+}
+
+func startLog(){
+	var err error
 	LogFile, err = cdfOS.OpenFile(LogFilePath)
 	defer LogFile.Close()
 	if err != nil {
@@ -141,8 +151,7 @@ func startExec(c *cli.Context) error {
 	}
 	//initialize logger
 	Logger = log.New(LogFile, "", 0)
+
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CURRENT_DIR)
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
-
-	return nil
 }
