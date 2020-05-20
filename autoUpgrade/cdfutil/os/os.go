@@ -43,3 +43,8 @@ func CreateFile(path string) (*os.File, error) {
 
 	return os.Create(path)
 }
+
+//OpenFile
+func OpenFile(path string) (*os.File, error) {
+	return os.OpenFile(path,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+}

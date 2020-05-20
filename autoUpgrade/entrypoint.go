@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -63,7 +62,7 @@ func init() {
 	}
 
 	//create log file
-	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format("20060102150405")+".log")
+	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
 	LogFile, err = cdfOS.CreateFile(LogFilePath)
 	defer LogFile.Close()
 	if err != nil {
@@ -75,18 +74,6 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println(log.Ldate)
-	fmt.Println(log.Ltime)
-	fmt.Println(log.Lmicroseconds)
-	fmt.Println(log.Llongfile)
-	fmt.Println(log.Lshortfile)
-	fmt.Println(log.LUTC)
-	fmt.Println(log.LstdFlags)
-
-	Logger = log.New(LogFile, "", 0)
-
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory: "+CURRENT_DIR)
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
 
 }
 
@@ -139,14 +126,23 @@ func main() {
 }
 
 func startExec(c *cli.Context) error {
+	var err error
+
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
 			DRY_RUN = true
 		}
 	}
-	fmt.Println(WORK_DIR)
-	fmt.Println(NODE_IN_CLUSTER)
-	fmt.Println(DRY_RUN)
-	fmt.Println(LogFilePath)
+
+	LogFile, err = cdfOS.OpenFile(LogFilePath)
+	defer LogFile.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//initialize logger
+	Logger = log.New(LogFile, "", 0)
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CURRENT_DIR)
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
+
 	return nil
 }
