@@ -133,11 +133,16 @@ func main() {
 
 //autoUpgrade main process
 func startExec(c *cli.Context) error {
+	var err error
+
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
 			DryRun = true
 		}
 	}
+
+	//main process
+	err = initUpgradeStep()
 
 	return nil
 }
@@ -154,4 +159,52 @@ func startLog() {
 
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CurrentDir)
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
+}
+
+//Determining start upgrade step...
+func initUpgradeStep() error{
+	upgradeStepFilePath := filepath.Join(TempFolder,"UPGRADE_STEP")
+	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
+	if exist == true {
+		return nil
+	} else {
+		upgradeStepFile, err := cdfOS.CreateFile(upgradeStepFilePath)
+		defer upgradeStepFile.Close()
+		if err != nil {
+			cdfLog.WriteLog(Logger,cdfCommon.FATAL,"Failed to create file "+upgradeStepFilePath, upgradeStepFilePath)
+			return err
+		}
+
+	}
+	return nil
+}
+
+//Getting upgrade package(s) information...
+func getUpgradePacksInfo(){
+
+}
+
+//Checking connection to the cluster nodes
+func checkConnection(){
+
+}
+
+//Getting nodes info...
+func getNodesInfo(){
+
+}
+
+//Checking upgrade package(s)...
+func checkUpgradePacks(){
+
+}
+
+//Checking parameters(s)...
+func checkParameters(){
+
+}
+
+//Checking nodes info...
+func checkNodesInfo(){
+
 }
