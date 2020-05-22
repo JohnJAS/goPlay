@@ -79,11 +79,12 @@ func init() {
 
 func main() {
 	//DEBUG_MODE
-	//os.Args = append(os.Args, "-n")
-	//os.Args = append(os.Args,"1.2.3.4")
-	//os.Args = append(os.Args, "-d")
-	//os.Args = append(os.Args, "./dir")
+	os.Args = append(os.Args, "-n")
+	os.Args = append(os.Args,"1.2.3.4")
+	os.Args = append(os.Args, "-d")
+	os.Args = append(os.Args, "./dir")
 	startLog()
+	defer LogFile.Close()
 
 	app := &cli.App{
 		Name:            "autoUpgrade",
@@ -144,13 +145,22 @@ func startExec(c *cli.Context) error {
 	//main process
 	err = initUpgradeStep()
 
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func check(err error) error {
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func startLog() {
 	var err error
 	LogFile, err = cdfOS.OpenFile(LogFilePath)
-	defer LogFile.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -166,14 +176,13 @@ func initUpgradeStep() error{
 	upgradeStepFilePath := filepath.Join(TempFolder,"UPGRADE_STEP")
 	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
 	if exist == true {
+		cdfLog.WriteLog(Logger,cdfCommon.INFO,"UPGRADE_STEP: "+string(UpgradeStep))
+		cdfLog.WriteLog(Logger,cdfCommon.DEBUG,"Previous upgrade step execution results found. Continuing with step "+string(UpgradeStep))
 		return nil
 	} else {
-		upgradeStepFile, err := cdfOS.CreateFile(upgradeStepFilePath)
-		defer upgradeStepFile.Close()
-		if err != nil {
-			cdfLog.WriteLog(Logger,cdfCommon.FATAL,"Failed to create file "+upgradeStepFilePath, upgradeStepFilePath)
-			return err
-		}
+		UpgradeStep = 0
+		err := cdfOS.WriteFile(upgradeStepFilePath, UpgradeStep)
+		return check(err)
 
 	}
 	return nil
