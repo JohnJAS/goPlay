@@ -29,23 +29,23 @@ var LogFile *os.File
 //Logger instance of log
 var Logger *log.Logger
 
-//CURRENT_DIR:
-var CURRENT_DIR string
+//CurrentDir current directory of autoUpgprade
+var CurrentDir string
 
-//UPGRADE_STEP: upgrade step already run
-var UPGRADE_STEP int
+//UpgradeStep upgrade step already run
+var UpgradeStep int
 
-//UPG_EXEC_CALL: upgrade exec call count, init 1 for the first call
-var UPG_EXEC_CALL int
+//UpgExecCall upgrade exec call count, init 1 for the first call
+var UpgExecCall int
 
-//NODE_IN_CLUSTER : because the script may not be in the cluster, users must provide a node in the cluster.
-var NODE_IN_CLUSTER string
+//NodeInCluster because the script may not be in the cluster, users must provide a node in the cluster.
+var NodeInCluster string
 
-//WORK_DIR : upgrade work dictionary on the nodes in the cluster
-var WORK_DIR string
+//WorkDir upgrade work dictionary on the nodes in the cluster
+var WorkDir string
 
-//DRY_RUN: for autoUpgrade dry-run
-var DRY_RUN bool
+//DryRun for autoUpgrade dry-run
+var DryRun bool
 
 func init() {
 	var err error
@@ -70,7 +70,7 @@ func init() {
 	}
 
 	//get current directory
-	CURRENT_DIR, err = os.Getwd()
+	CurrentDir, err = os.Getwd()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -88,7 +88,7 @@ func main() {
 	app := &cli.App{
 		Name:            "autoUpgrade",
 		Usage:           "Upgrade CDF automatically.",
-		UsageText:       "autoUpgrade [-d|--dir <working_directory>] [-n|--node <any_node_in_cluster>] [-u|--sysuser <system_user>] [-o|--options <input_options>]",
+		UsageText:       "autoUpgrade [-d|--dir <working_directory>] [-n|--node <any_NodeInCluster>] [-u|--sysuser <system_user>] [-o|--options <input_options>]",
 		Description:     "Requires passwordless SSH to be configured to all cluster nodes. If the script is not run on a cluster node, you must have passwordless SSH configured to all cluster nodes. If the script is run on a cluster node, you must have passwordless SSH configured to all cluster nodes including this node. You can learn more about the auto upgrade through the official document.",
 		HideHelpCommand: true,
 		Flags: []cli.Flag{
@@ -96,14 +96,14 @@ func main() {
 				Name:        "d",
 				Aliases:     []string{"dir"},
 				Required:    true,
-				Destination: &WORK_DIR,
+				Destination: &WorkDir,
 				Usage:       "The working directory to use on all cluster nodes. ENSURE the directory is empty and the file system has enough space. If you are a non-root user on the nodes inside the cluster, make sure you have permission to this directory.(mandatory)",
 			},
 			&cli.StringFlag{
 				Name:        "n",
 				Aliases:     []string{"node"},
 				Required:    true,
-				Destination: &NODE_IN_CLUSTER,
+				Destination: &NodeInCluster,
 				Usage:       "IP address of any node inside the cluster.(mandatory)",
 			},
 			&cli.StringFlag{
@@ -135,14 +135,14 @@ func main() {
 func startExec(c *cli.Context) error {
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
-			DRY_RUN = true
+			DryRun = true
 		}
 	}
 
 	return nil
 }
 
-func startLog(){
+func startLog() {
 	var err error
 	LogFile, err = cdfOS.OpenFile(LogFilePath)
 	defer LogFile.Close()
@@ -152,6 +152,6 @@ func startLog(){
 	//initialize logger
 	Logger = log.New(LogFile, "", 0)
 
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CURRENT_DIR)
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CurrentDir)
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
 }
