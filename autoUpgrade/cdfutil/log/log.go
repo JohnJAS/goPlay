@@ -19,10 +19,10 @@ func WriteLog(logger *log.Logger, level string, msg string, filePath ...string) 
 		logger.Println(msg)
 	case cdfCommon.FATAL:
 		log.Println(msg)
-		log.Println("The CDF autoUpgrade log file is "+strings.Join(filePath,""))
+		log.Println("The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
 		logger.Println(msg)
 		logger.SetPrefix(timeStamp + " " + cdfCommon.INFO + " ")
-		logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is "+strings.Join(filePath,""))
+		logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
 	default:
 		log.Println(msg)
 		logger.Println(msg)

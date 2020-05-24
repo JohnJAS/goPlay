@@ -80,7 +80,7 @@ func init() {
 func main() {
 	//DEBUG_MODE
 	os.Args = append(os.Args, "-n")
-	os.Args = append(os.Args,"1.2.3.4")
+	os.Args = append(os.Args, "1.2.3.4")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "./dir")
 	startLog()
@@ -172,12 +172,12 @@ func startLog() {
 }
 
 //Determining start upgrade step...
-func initUpgradeStep() error{
-	upgradeStepFilePath := filepath.Join(TempFolder,"UPGRADE_STEP")
+func initUpgradeStep() error {
+	upgradeStepFilePath := filepath.Join(TempFolder, "UPGRADE_STEP")
 	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
 	if exist == true {
-		cdfLog.WriteLog(Logger,cdfCommon.INFO,"UPGRADE_STEP: "+string(UpgradeStep))
-		cdfLog.WriteLog(Logger,cdfCommon.DEBUG,"Previous upgrade step execution results found. Continuing with step "+string(UpgradeStep))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, "UPGRADE_STEP: "+string(UpgradeStep))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Previous upgrade step execution results found. Continuing with step "+string(UpgradeStep))
 		return nil
 	} else {
 		UpgradeStep = 0
@@ -189,31 +189,31 @@ func initUpgradeStep() error{
 }
 
 //Getting upgrade package(s) information...
-func getUpgradePacksInfo(){
+func getUpgradePacksInfo() {
 
 }
 
 //Checking connection to the cluster nodes
-func checkConnection(){
+func checkConnection() {
 
 }
 
 //Getting nodes info...
-func getNodesInfo(){
+func getNodesInfo() {
 
 }
 
 //Checking upgrade package(s)...
-func checkUpgradePacks(){
+func checkUpgradePacks() {
 
 }
 
 //Checking parameters(s)...
-func checkParameters(){
+func checkParameters() {
 
 }
 
 //Checking nodes info...
-func checkNodesInfo(){
+func checkNodesInfo() {
 
 }
