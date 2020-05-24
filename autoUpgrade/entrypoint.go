@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -143,6 +146,8 @@ func startExec(c *cli.Context) error {
 	}
 
 	//main process
+	log.Println("===========================================================================")
+	//init upgrade step
 	err = initUpgradeStep()
 
 	if err != nil {
@@ -173,19 +178,25 @@ func startLog() {
 
 //Determining start upgrade step...
 func initUpgradeStep() error {
-	upgradeStepFilePath := filepath.Join(TempFolder, "UPGRADE_STEP")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Determining start upgrade step...")
+	upgradeStepFilePath := filepath.Join(TempFolder, "UpgradeStep")
 	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
 	if exist == true {
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, "UPGRADE_STEP: "+string(UpgradeStep))
+		result, err := cdfOS.ReadFile(upgradeStepFilePath, 1024)
+		if err != nil && err != io.EOF {
+			return err
+		} else if result == "" {
+			return errors.New("Fail to get UpgradeStep.")
+		}
+		UpgradeStep, _ = strconv.Atoi(result)
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, "UpgradeStep: "+result)
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Previous upgrade step execution results found. Continuing with step "+string(UpgradeStep))
 		return nil
 	} else {
 		UpgradeStep = 0
 		err := cdfOS.WriteFile(upgradeStepFilePath, UpgradeStep)
 		return check(err)
-
 	}
-	return nil
 }
 
 //Getting upgrade package(s) information...
