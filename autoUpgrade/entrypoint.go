@@ -188,9 +188,12 @@ func initUpgradeStep() error {
 		} else if result == "" {
 			return errors.New("Fail to get UpgradeStep.")
 		}
-		UpgradeStep, _ = strconv.Atoi(result)
+		UpgradeStep, err = strconv.Atoi(result)
+		if err != nil {
+			return err
+		}
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, "UpgradeStep: "+result)
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Previous upgrade step execution results found. Continuing with step "+string(UpgradeStep))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Previous upgrade step execution results found. Continuing with step "+result)
 		return nil
 	} else {
 		UpgradeStep = 0
