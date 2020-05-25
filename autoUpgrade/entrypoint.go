@@ -20,9 +20,6 @@ import (
 //TempFolder is autoUpgrade temp folder including re-run mark and auto upgrade log
 var TempFolder string
 
-//UpgradeLog is log folder of autoUpgrade
-var UpgradeLog string
-
 //LogFilePath is autoUpgrade logfile path
 var LogFilePath string
 
@@ -49,6 +46,12 @@ var WorkDir string
 
 //DryRun for autoUpgrade dry-run
 var DryRun bool
+
+//Nodes of k8s cluster
+type Nodes struct {
+	nodeList []string
+	num      int
+}
 
 func init() {
 	var err error
@@ -145,10 +148,27 @@ func startExec(c *cli.Context) error {
 		}
 	}
 
-	//main process
+	//main process start
 	log.Println("===========================================================================")
+
 	//init upgrade step
 	err = initUpgradeStep()
+	if err != nil {
+		return err
+	}
+	log.Println()
+
+	//connect to the cluster
+	err = checkConnection(Nodes{
+		[]string{NodeInCluster},
+		1,
+	})
+	if err != nil {
+		return err
+	}
+
+	//get upgrade packages information
+	err = getUpgradePacksInfo()
 
 	if err != nil {
 		return err
@@ -203,13 +223,13 @@ func initUpgradeStep() error {
 }
 
 //Getting upgrade package(s) information...
-func getUpgradePacksInfo() {
-
+func getUpgradePacksInfo() error {
+	return nil
 }
 
 //Checking connection to the cluster nodes
-func checkConnection() {
-
+func checkConnection(nodes Nodes) error {
+	return nil
 }
 
 //Getting nodes info...
