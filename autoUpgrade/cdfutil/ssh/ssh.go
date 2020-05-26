@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -62,7 +63,7 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 	var b bytes.Buffer
 	session.Stdout = &b
 	if err := session.Run("/usr/bin/whoami"); err != nil {
-		panic("Failed to run: " + err.Error())
+		return errors.New("Failed to run: " + err.Error())
 	}
 	fmt.Println(b.String())
 
