@@ -1,9 +1,6 @@
 package ssh
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"os/user"
@@ -37,7 +34,7 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 	}
 	// Define the Client Config as :
 	config := &ssh.ClientConfig{
-		User: userName,
+		User:            userName,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(key),
@@ -46,7 +43,7 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 
 	host := node
 	port := "22"
-	address := host+":"+port
+	address := host + ":" + port
 	var client *ssh.Client
 	client, err = ssh.Dial("tcp", address, config)
 	if err != nil {
@@ -56,16 +53,9 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 	var session *ssh.Session
 	session, err = client.NewSession()
 	if err != nil {
-		return err
+		return
 	}
 	defer session.Close()
-
-	var b bytes.Buffer
-	session.Stdout = &b
-	if err := session.Run("/usr/bin/whoami"); err != nil {
-		return errors.New("Failed to run: " + err.Error())
-	}
-	fmt.Println(b.String())
 
 	return
 }

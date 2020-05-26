@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -166,7 +167,6 @@ func startExec(c *cli.Context) error {
 	}
 	log.Println()
 
-
 	//connect to the cluster
 	err = checkConnection(cdfCommon.Nodes{
 		[]string{NodeInCluster},
@@ -176,7 +176,6 @@ func startExec(c *cli.Context) error {
 		return err
 	}
 	log.Println()
-
 
 	//get upgrade packages information
 	err = getUpgradePacksInfo()
@@ -234,14 +233,29 @@ func initUpgradeStep() error {
 }
 
 //
-func checkConnection(nodes cdfCommon.Nodes) error{
+func checkConnection(nodes cdfCommon.Nodes) error {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Checking connection to the cluster...")
-	err := cdfSSH.CheckConnection(nodes.NodeList[0], SysUser, KeyPath)
-	if err != nil {
-		return err
-	} else {
-		return nil
+
+	ch := make(chan string, nodes.Num)
+
+	go func(chnl chan string) {
+		for _, node := range nodes.NodeList {
+			err := cdfSSH.CheckConnection(node, SysUser, KeyPath)
+			if err != nil {
+				chnl <- "Failed to connect to " + node
+			} else {
+				chnl <- "ok"
+			}
+
+		}
+		close(chnl)
+	}(ch)
+
+	for result := range ch {
+		fmt.Println(result)
 	}
+
+	return nil
 }
 
 //Getting upgrade package(s) information...
