@@ -26,3 +26,9 @@ type Nodes struct {
 	NodeList []string
 	Num      int
 }
+
+//
+type ConnectionStatus struct {
+	Connected   bool
+	Description string
+}

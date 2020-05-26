@@ -55,6 +55,9 @@ var KeyPath string
 //DryRun for autoUpgrade dry-run
 var DryRun bool
 
+//Debug autoUpgrade debug mode
+var Debug bool
+
 func init() {
 	var err error
 
@@ -136,7 +139,12 @@ func main() {
 			&cli.StringFlag{
 				Name:  "dry-run",
 				Value: "false",
-				Usage: "Dry run for autoUpgrade.",
+				Usage: "Dry run for autoUpgrade.(Developping)",
+			},
+			&cli.StringFlag{
+				Name:  "debug",
+				Value: "false",
+				Usage: "Debug mode for autoUpgrade.(Developping)",
 			},
 		},
 		Action: startExec,
@@ -154,6 +162,12 @@ func startExec(c *cli.Context) error {
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
 			DryRun = true
+		}
+	}
+
+	if c.Bool("debug") {
+		if c.Value("debug") == "true" {
+			Debug = true
 		}
 	}
 
@@ -234,17 +248,18 @@ func initUpgradeStep() error {
 
 //
 func checkConnection(nodes cdfCommon.Nodes) error {
+	var err error
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Checking connection to the cluster...")
 
-	ch := make(chan string, nodes.Num)
+	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
 
-	go func(chnl chan string) {
+	go func(chnl chan cdfCommon.ConnectionStatus) {
 		for _, node := range nodes.NodeList {
 			err := cdfSSH.CheckConnection(node, SysUser, KeyPath)
 			if err != nil {
-				chnl <- "Failed to connect to " + node
+				chnl <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node)}
 			} else {
-				chnl <- "ok"
+				chnl <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node)}
 			}
 
 		}
@@ -252,10 +267,15 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 	}(ch)
 
 	for result := range ch {
-		fmt.Println(result)
+		if result.Connected {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, result.Description)
+		} else {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, result.Description)
+			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration and try again.")
+		}
 	}
 
-	return nil
+	return check(err)
 }
 
 //Getting upgrade package(s) information...
