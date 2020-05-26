@@ -20,3 +20,9 @@ const (
 const (
 	TIMESTAMP = "20060102150405"
 )
+
+//Nodes of k8s cluster
+type Nodes struct {
+	NodeList []string
+	Num      int
+}

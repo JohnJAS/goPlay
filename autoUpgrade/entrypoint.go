@@ -5,16 +5,17 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/urfave/cli/v2"
-
 	cdfLog "autoUpgrade/cdfutil/log"
 	cdfOS "autoUpgrade/cdfutil/os"
+	cdfSSH "autoUpgrade/cdfutil/ssh"
 	cdfCommon "autoUpgrade/common"
+	"github.com/urfave/cli/v2"
 )
 
 //TempFolder is autoUpgrade temp folder including re-run mark and auto upgrade log
@@ -44,25 +45,25 @@ var NodeInCluster string
 //WorkDir upgrade work dictionary on the nodes in the cluster
 var WorkDir string
 
+//SysUser is the user of destination k8s cluster
+var SysUser string
+
+//KeyPath is the rsa key path
+var KeyPath string
+
 //DryRun for autoUpgrade dry-run
 var DryRun bool
-
-//Nodes of k8s cluster
-type Nodes struct {
-	nodeList []string
-	num      int
-}
 
 func init() {
 	var err error
 
 	//identify system OS
 	if cdfCommon.SysType == "windows" {
-		TempFolder = os.Getenv("TEMP")
-		if TempFolder == "" {
-			log.Fatal("Failed to find system env TEMP, initailization failed.")
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatal("Failed to get current user info, initailization failed.")
 		}
-		TempFolder = filepath.Join(TempFolder, "autoUpgrade")
+		TempFolder = filepath.Join(usr.HomeDir, "tmp", "autoUpgrade")
 	} else {
 		TempFolder = "/tmp/autoUpgrade"
 	}
@@ -86,7 +87,7 @@ func init() {
 func main() {
 	//DEBUG_MODE
 	os.Args = append(os.Args, "-n")
-	os.Args = append(os.Args, "1.2.3.4")
+	os.Args = append(os.Args, "shcCDFRH75vm02-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "./dir")
 	startLog()
@@ -114,10 +115,17 @@ func main() {
 				Usage:       "IP address of any node inside the cluster.(mandatory)",
 			},
 			&cli.StringFlag{
-				Name:    "u",
-				Value:   "root",
-				Aliases: []string{"sysuser"},
-				Usage:   "The user for the SSH connection to the nodes inside the cluster. This user must have the permission to operate on the nodes inside the cluster. The configuration of the user must be done before running this script.(optional)",
+				Name:        "u",
+				Value:       "root",
+				Aliases:     []string{"sysuser"},
+				Destination: &SysUser,
+				Usage:       "The user for the SSH connection to the nodes inside the cluster. This user must have the permission to operate on the nodes inside the cluster. The configuration of the user must be done before running this script.(optional)",
+			},
+			&cli.StringFlag{
+				Name:        "i",
+				Aliases:     []string{"rsakey"},
+				Destination: &KeyPath,
+				Usage:       "The RSA key for the SSH connection to the nodes inside the cluster.",
 			},
 			&cli.StringFlag{
 				Name:    "o",
@@ -158,14 +166,17 @@ func startExec(c *cli.Context) error {
 	}
 	log.Println()
 
+
 	//connect to the cluster
-	err = checkConnection(Nodes{
+	err = checkConnection(cdfCommon.Nodes{
 		[]string{NodeInCluster},
 		1,
 	})
 	if err != nil {
 		return err
 	}
+	log.Println()
+
 
 	//get upgrade packages information
 	err = getUpgradePacksInfo()
@@ -222,13 +233,19 @@ func initUpgradeStep() error {
 	}
 }
 
-//Getting upgrade package(s) information...
-func getUpgradePacksInfo() error {
-	return nil
+//
+func checkConnection(nodes cdfCommon.Nodes) error{
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Checking connection to the cluster...")
+	err := cdfSSH.CheckConnection(nodes.NodeList[0], SysUser, KeyPath)
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
-//Checking connection to the cluster nodes
-func checkConnection(nodes Nodes) error {
+//Getting upgrade package(s) information...
+func getUpgradePacksInfo() error {
 	return nil
 }
 
