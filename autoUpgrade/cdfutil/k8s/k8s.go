@@ -2,16 +2,14 @@ package k8s
 
 import (
 	cdfSSH "autoUpgrade/cdfutil/ssh"
-	"bufio"
-	"fmt"
 	"golang.org/x/crypto/ssh"
-	"log"
+	"os"
 )
 
 //GetCurrentVersion get CDF current version
 func GetCurrentVersion(node string, userName string, keyPath string) (err error) {
-	//cmd := "kubectl get cm base-configmap -n core -o json"
-	cmd := "bash -x /root/workspace/file.sh"
+	cmd := "kubectl get cm base-configmap1 -n core -o json"
+	//cmd := "/root/workspace/file.sh"
 
 	client, err := cdfSSH.CreatSSHClient(node, userName, keyPath)
 	if err != nil {
@@ -25,18 +23,21 @@ func GetCurrentVersion(node string, userName string, keyPath string) (err error)
 	}
 	defer session.Close()
 
-	cmdReader, err := session.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	scanner := bufio.NewScanner(cmdReader)
-	go func() {
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	}()
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
+	//cmdReader, err := session.StdoutPipe()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//scanner := bufio.NewScanner(cmdReader)
+	//go func() {
+	//	for scanner.Scan() {
+	//		fmt.Println(scanner.Text())
+	//	}
+	//}()
 
 	err = session.Run(cmd)
 
-	return
+	return err
 }

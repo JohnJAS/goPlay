@@ -287,7 +287,6 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 //Getting upgrade package(s) information...
 func getUpgradePacksInfo() error {
 	err := cdfK8S.GetCurrentVersion(NodeInCluster,SysUser,KeyPath)
-
 	fmt.Println(err)
 	return nil
 }
