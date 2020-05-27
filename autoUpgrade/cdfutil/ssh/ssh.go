@@ -3,6 +3,7 @@ package ssh
 import (
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"net"
 	"os/user"
 	"path/filepath"
 )
@@ -43,9 +44,8 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 
 	host := node
 	port := "22"
-	address := host + ":" + port
 	var client *ssh.Client
-	client, err = ssh.Dial("tcp", address, config)
+	client, err = ssh.Dial("tcp", net.JoinHostPort(host,port), config)
 	if err != nil {
 		return
 	}
@@ -58,4 +58,27 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 	defer session.Close()
 
 	return
+}
+
+func CreatSSHClient(node string, userName string, keyPath string) (client *ssh.Client, err error) {
+	// Get rsa key
+	var key ssh.Signer
+	key, err = getKeyFile(keyPath)
+	if err != nil {
+		return
+	}
+	// Define the Client Config as :
+	config := &ssh.ClientConfig{
+		User:            userName,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(key),
+		},
+	}
+
+	host := node
+	port := "22"
+
+	return ssh.Dial("tcp", net.JoinHostPort(host,port), config)
+
 }

@@ -7,13 +7,13 @@ import (
 //SysType is the value of windows or linux or others
 const SysType = runtime.GOOS
 
-//Log
+//Log level
 const (
-	DEBUG = "DEBUG"
-	INFO  = "INFO"
-	WARN  = "WARN"
-	ERROR = "ERROR"
-	FATAL = "FATAL"
+	DEBUG = 1 << iota	//
+	INFO
+	WARN
+	ERROR
+	FATAL
 )
 
 //Time Format
@@ -27,7 +27,7 @@ type Nodes struct {
 	Num      int
 }
 
-//
+//ConnectionStatus is used in SSH connection check
 type ConnectionStatus struct {
 	Connected   bool
 	Description string

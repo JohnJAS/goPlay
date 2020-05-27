@@ -8,23 +8,81 @@ import (
 	cdfCommon "autoUpgrade/common"
 )
 
-func WriteLog(logger *log.Logger, level string, msg string, filePath ...string) {
+func getLevel(level int) string {
+	switch level {
+	case cdfCommon.DEBUG:
+		return "DEBUG"
+	case cdfCommon.INFO:
+		return "INFO"
+	case cdfCommon.WARN:
+		return "WARN"
+	case cdfCommon.ERROR:
+		return "ERROR"
+	case cdfCommon.FATAL:
+		return "FATAL"
+	default:
+		return ""
+	}
+}
+
+func getLogLevel(loglevel int) int {
+	switch loglevel {
+	case cdfCommon.DEBUG:
+		return cdfCommon.DEBUG | cdfCommon.INFO | cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
+	case cdfCommon.INFO:
+		return cdfCommon.INFO | cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
+	case cdfCommon.WARN:
+		return cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
+	case cdfCommon.ERROR:
+		return cdfCommon.ERROR | cdfCommon.FATAL
+	case cdfCommon.FATAL:
+		return cdfCommon.FATAL
+	default:
+		return 0
+	}
+}
+
+func TransferLogLevel(logLevel string) int {
+	switch logLevel {
+	case "DEBUG":
+		return cdfCommon.DEBUG
+	case "INFO":
+		return cdfCommon.DEBUG
+	case "WARN":
+		return cdfCommon.WARN
+	case "ERROR":
+		return cdfCommon.ERROR
+	case "FATAL":
+		return cdfCommon.FATAL
+	default:
+		return 0
+	}
+}
+
+func WriteLog(logger *log.Logger, level int, loglevel int, msg string, filePath ...string) {
 	timeStamp := time.Now().UTC().Format(time.RFC3339Nano)
 	log.SetFlags(0)
-	logger.SetPrefix(timeStamp + " " + level + " ")
+	logger.SetPrefix(timeStamp + " " + getLevel(level) + " ")
+
+	loglevel = getLogLevel(loglevel)
 
 	switch level {
-
 	case cdfCommon.DEBUG:
-		logger.Println(msg)
+		if level & loglevel == level {
+			logger.Println(msg)
+		}
 	case cdfCommon.FATAL:
-		log.Println(msg)
-		log.Println("The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
-		logger.Println(msg)
-		logger.SetPrefix(timeStamp + " " + cdfCommon.INFO + " ")
-		logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
+		if level & loglevel == level {
+			log.Println(msg)
+			log.Println("The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
+			logger.Println(msg)
+			logger.SetPrefix(timeStamp + " " + getLevel(level) + " ")
+			logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
+		}
 	default:
-		log.Println(msg)
-		logger.Println(msg)
+		if level & loglevel == level {
+			log.Println(msg)
+			logger.Println(msg)
+		}
 	}
 }

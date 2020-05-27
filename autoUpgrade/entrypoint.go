@@ -15,6 +15,7 @@ import (
 	cdfLog "autoUpgrade/cdfutil/log"
 	cdfOS "autoUpgrade/cdfutil/os"
 	cdfSSH "autoUpgrade/cdfutil/ssh"
+	cdfK8S "autoUpgrade/cdfutil/k8s"
 	cdfCommon "autoUpgrade/common"
 	"github.com/urfave/cli/v2"
 )
@@ -55,8 +56,8 @@ var KeyPath string
 //DryRun for autoUpgrade dry-run
 var DryRun bool
 
-//Debug autoUpgrade debug mode
-var Debug bool
+//LogLevel set log level in autoUpgrade log
+var LogLevel int
 
 func init() {
 	var err error
@@ -91,7 +92,7 @@ func init() {
 func main() {
 	//DEBUG_MODE
 	os.Args = append(os.Args, "-n")
-	os.Args = append(os.Args, "shcCDFRH75vm02-0.hpeswlab.net")
+	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "./dir")
 	startLog()
@@ -139,12 +140,12 @@ func main() {
 			&cli.StringFlag{
 				Name:  "dry-run",
 				Value: "false",
-				Usage: "Dry run for autoUpgrade.(Developping)",
+				Usage: "Dry run for autoUpgrade.(Alpha)",
 			},
 			&cli.StringFlag{
-				Name:  "debug",
-				Value: "false",
-				Usage: "Debug mode for autoUpgrade.(Developping)",
+				Name:  "verbose",
+				Value: "DUBUG",
+				Usage: "Set log level for autoUpgrade.(Alpha)",
 			},
 		},
 		Action: startExec,
@@ -165,10 +166,14 @@ func startExec(c *cli.Context) error {
 		}
 	}
 
-	if c.Bool("debug") {
-		if c.Value("debug") == "true" {
-			Debug = true
+	if c.Bool("dry-run") {
+		LogLevel = cdfLog.TransferLogLevel(c.Value("verbose").(string))
+		if LogLevel == 0 {
+			LogLevel = cdfCommon.DEBUG
+			cdfLog.WriteLog(Logger, cdfCommon.WARN, LogLevel, fmt.Sprintf("Unsupportted input log level %s. Log level works in DUBUG mode.", c.Value("verbose")))
 		}
+	} else {
+		LogLevel = cdfCommon.DEBUG
 	}
 
 	//main process start
@@ -181,7 +186,7 @@ func startExec(c *cli.Context) error {
 	}
 	log.Println()
 
-	//connect to the cluster
+	//check connection to the cluster
 	err = checkConnection(cdfCommon.Nodes{
 		[]string{NodeInCluster},
 		1,
@@ -193,10 +198,11 @@ func startExec(c *cli.Context) error {
 
 	//get upgrade packages information
 	err = getUpgradePacksInfo()
-
 	if err != nil {
 		return err
 	}
+	log.Println()
+
 	return nil
 }
 
@@ -216,13 +222,13 @@ func startLog() {
 	//initialize logger
 	Logger = log.New(LogFile, "", 0)
 
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Current directory : "+CurrentDir)
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "User input command: "+strings.Join(os.Args, " "))
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "Current directory : "+CurrentDir)
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "User input command: "+strings.Join(os.Args, " "))
 }
 
 //Determining start upgrade step...
 func initUpgradeStep() error {
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Determining start upgrade step...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Determining start upgrade step...")
 	upgradeStepFilePath := filepath.Join(TempFolder, "UpgradeStep")
 	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
 	if exist == true {
@@ -236,8 +242,8 @@ func initUpgradeStep() error {
 		if err != nil {
 			return err
 		}
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, "UpgradeStep: "+result)
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, "Previous upgrade step execution results found. Continuing with step "+result)
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "UpgradeStep: "+result)
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "Previous upgrade step execution results found. Continuing with step "+result)
 		return nil
 	} else {
 		UpgradeStep = 0
@@ -249,7 +255,7 @@ func initUpgradeStep() error {
 //
 func checkConnection(nodes cdfCommon.Nodes) error {
 	var err error
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, "Checking connection to the cluster...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking connection to the cluster...")
 
 	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
 
@@ -268,9 +274,9 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 
 	for result := range ch {
 		if result.Connected {
-			cdfLog.WriteLog(Logger, cdfCommon.INFO, result.Description)
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
-			cdfLog.WriteLog(Logger, cdfCommon.ERROR, result.Description)
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
 			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration and try again.")
 		}
 	}
@@ -280,6 +286,9 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 
 //Getting upgrade package(s) information...
 func getUpgradePacksInfo() error {
+	err := cdfK8S.GetCurrentVersion(NodeInCluster,SysUser,KeyPath)
+
+	fmt.Println(err)
 	return nil
 }
 
