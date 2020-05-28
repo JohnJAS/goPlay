@@ -41,11 +41,18 @@ func GetCurrentVersion(node string, userName string, keyPath string) (currentVer
 
 	err = session.Run(cmd)
 
-	var cm map[string]map[string]string
+	var cmlv1 map[string]json.RawMessage
+	err = json.Unmarshal(outbuf.Bytes(), &cmlv1)
+	if err != nil {
+		return
+	}
 
-	json.Unmarshal(outbuf.Bytes(), &cm)
+	var cmlv2 map[string]string
+	err = json.Unmarshal(cmlv1["data"], &cmlv2)
+	if err != nil {
+		return
+	}
 
-	currentVersion = cm["data"]["PLATFORM_VERSION"]
-
+	currentVersion = cmlv2["PLATFORM_VERSION"]
 	return
 }

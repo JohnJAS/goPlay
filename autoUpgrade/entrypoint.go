@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	cdfK8S "autoUpgrade/cdfutil/k8s"
 	cdfLog "autoUpgrade/cdfutil/log"
 	cdfOS "autoUpgrade/cdfutil/os"
 	cdfSSH "autoUpgrade/cdfutil/ssh"
-	cdfK8S "autoUpgrade/cdfutil/k8s"
 	cdfCommon "autoUpgrade/common"
 	"github.com/urfave/cli/v2"
 )
@@ -59,6 +59,12 @@ var DryRun bool
 //LogLevel set log level in autoUpgrade log
 var LogLevel int
 
+//CDF version before upgrade(won't refresh)
+var OrgCurrentVersion string
+
+//CDF current version(refresh after an CDF version upgrade)
+var CurrentVersion string
+
 func init() {
 	var err error
 
@@ -75,8 +81,7 @@ func init() {
 
 	//create log file
 	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
-	LogFile, err = cdfOS.CreateFile(LogFilePath)
-	defer LogFile.Close()
+	_, err = cdfOS.CreateFile(LogFilePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -285,14 +290,40 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 }
 
 //Getting upgrade package(s) information...
-func getUpgradePacksInfo() error {
-	currentVersion, stdout, stderr, err := cdfK8S.GetCurrentVersion(NodeInCluster,SysUser,KeyPath)
+func getUpgradePacksInfo() (err error) {
+	err = getCurrentVersion(false)
+	return check(err)
+}
+
+func getCurrentVersion(update bool) error {
+	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "CurrentVersion"))
 	if err != nil {
-		cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 		return err
+	}
+	if !exist || update {
+		CurrentVersion, stdout, stderr, err := cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath)
+		if err != nil {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
+			return err
+		} else {
+			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, stdout.String())
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentVersion: "+CurrentVersion)
+			_, err = cdfOS.CreateFile(filepath.Join(TempFolder, "CurrentVersion"))
+			if err != nil {
+				return err
+			}
+			err = cdfOS.WriteFile(filepath.Join(TempFolder, "CurrentVersion"), CurrentVersion)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	} else {
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, stdout.String())
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, currentVersion)
+		CurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "CurrentVersion"))
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 	return nil
 }
