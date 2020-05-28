@@ -1,14 +1,16 @@
 package k8s
 
 import (
-	cdfSSH "autoUpgrade/cdfutil/ssh"
+	"bytes"
+	"encoding/json"
 	"golang.org/x/crypto/ssh"
-	"os"
+
+	cdfSSH "autoUpgrade/cdfutil/ssh"
 )
 
 //GetCurrentVersion get CDF current version
-func GetCurrentVersion(node string, userName string, keyPath string) (err error) {
-	cmd := "kubectl get cm base-configmap1 -n core -o json"
+func GetCurrentVersion(node string, userName string, keyPath string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
+	cmd := "kubectl get cm base-configmap -n core -o json"
 	//cmd := "/root/workspace/file.sh"
 
 	client, err := cdfSSH.CreatSSHClient(node, userName, keyPath)
@@ -23,8 +25,8 @@ func GetCurrentVersion(node string, userName string, keyPath string) (err error)
 	}
 	defer session.Close()
 
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
+	session.Stdout = &outbuf
+	session.Stderr = &errbuf
 
 	//cmdReader, err := session.StdoutPipe()
 	//if err != nil {
@@ -39,5 +41,11 @@ func GetCurrentVersion(node string, userName string, keyPath string) (err error)
 
 	err = session.Run(cmd)
 
-	return err
+	var cm map[string]map[string]string
+
+	json.Unmarshal(outbuf.Bytes(), &cm)
+
+	currentVersion = cm["data"]["PLATFORM_VERSION"]
+
+	return
 }
