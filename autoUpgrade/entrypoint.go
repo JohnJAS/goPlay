@@ -148,10 +148,11 @@ func main() {
 				Aliases: []string{"options"},
 				Usage:   "Set the options needed for each version of upgrade. For a single version, the rule is like '[upgradeVersion1]:[option1]=[value1],[option2]=[value2]'. Different versions use '|' to distinguish with others, like '[upgradeVersion1]:[option]=[value]|[upgradeVersion2]:[option]=[value]'.(optional)",
 			},
-			&cli.StringFlag{
-				Name:  "dry-run",
-				Value: "false",
-				Usage: "Dry run for autoUpgrade.(Alpha)",
+			&cli.BoolFlag{
+				Name:        "dry-run",
+				Value:       false,
+				Destination: &DryRun,
+				Usage:       "Dry run for autoUpgrade.(Alpha)",
 			},
 			&cli.StringFlag{
 				Name:  "verbose",
@@ -169,13 +170,7 @@ func main() {
 
 //autoUpgrade main process
 func startExec(c *cli.Context) (err error) {
-	if c.Bool("dry-run") {
-		if c.Value("dry-run") == "true" {
-			DryRun = true
-		}
-	}
-
-	if c.Bool("dry-run") {
+	if c.Bool("verbose") {
 		LogLevel = cdfLog.TransferLogLevel(c.Value("verbose").(string))
 		if LogLevel == 0 {
 			LogLevel = cdfCommon.DEBUG
@@ -334,12 +329,12 @@ func getCurrentNodesInfo() (err error) {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return
 		}
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v",NodeList))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v", NodeList))
 		for i, node := range NodeList.List {
-			if i == NodeList.Num - 1 {
-				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name + "," + node.Role)
+			if i == NodeList.Num-1 {
+				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name+","+node.Role)
 			} else {
-				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name + "," + node.Role+";")
+				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name+","+node.Role+";")
 			}
 		}
 	} else {
@@ -348,11 +343,11 @@ func getCurrentNodesInfo() (err error) {
 		if err != nil {
 			return
 		}
-		for _, slice := range strings.Split(string(content),";") {
-			elem := strings.Split(slice,",")
-			NodeList.AddNode(cdfCommon.NewNode(elem[0],elem[1]))
+		for _, slice := range strings.Split(string(content), ";") {
+			elem := strings.Split(slice, ",")
+			NodeList.AddNode(cdfCommon.NewNode(elem[0], elem[1]))
 		}
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v",NodeList))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v", NodeList))
 	}
 	return
 }
