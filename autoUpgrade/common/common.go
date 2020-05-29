@@ -28,8 +28,8 @@ const (
 )
 
 type Node struct {
-	Name string
-	Role string
+	Name string `json:Name`
+	Role string `json:Role`
 }
 
 func NewNode(name string, role string) Node {
@@ -38,8 +38,8 @@ func NewNode(name string, role string) Node {
 
 //Nodes of k8s cluster
 type NodeList struct {
-	List []Node
-	Num  int
+	List []Node `json:List`
+	Num  int    `json:Num`
 }
 
 func NewNodeList(list []Node, num int) NodeList {

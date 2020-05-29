@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -321,7 +322,7 @@ func getCurrentNodesInfo() (err error) {
 	if err != nil {
 		return err
 	}
-	if ! exist {
+	if !exist {
 		// get current nodes info
 		var stderr bytes.Buffer
 		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath)
@@ -330,22 +331,22 @@ func getCurrentNodesInfo() (err error) {
 			return
 		}
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v", NodeList))
-		for i, node := range NodeList.List {
-			if i == NodeList.Num-1 {
-				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name+","+node.Role)
-			} else {
-				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name+","+node.Role+";")
-			}
+		var b []byte
+		b, err = json.Marshal(NodeList)
+		if err != nil {
+			return
 		}
+		err = cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), string(b))
+		return
 	} else {
 		var content string
 		content, err = cdfOS.ReadFile(filepath.Join(TempFolder, "Nodes"))
 		if err != nil {
 			return
 		}
-		for _, slice := range strings.Split(string(content), ";") {
-			elem := strings.Split(slice, ",")
-			NodeList.AddNode(cdfCommon.NewNode(elem[0], elem[1]))
+		err = json.Unmarshal([]byte(content), &NodeList)
+		if err != nil {
+			return
 		}
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v", NodeList))
 	}
