@@ -46,7 +46,7 @@ func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string
 		return
 	}
 	for _, node := range strings.Split(outbuf.String()," ") {
-		nodelist.AddNode(cdfCommon.NewNode(node,"master"))
+		nodelist.AddNode(cdfCommon.NewNode(node,cdfCommon.MASTER))
 	}
 
 	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmdWorker)
@@ -54,7 +54,7 @@ func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string
 		return
 	}
 	for _, node := range strings.Split(outbuf.String()," ") {
-		nodelist.AddNode(cdfCommon.NewNode(node,"worker"))
+		nodelist.AddNode(cdfCommon.NewNode(node,cdfCommon.WORKER))
 	}
 
 	return

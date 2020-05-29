@@ -57,16 +57,17 @@ func OpenFile(path string) (*os.File, error) {
 //WriteFile
 func WriteFile(path string, i interface{}) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	defer f.Close()
 	if err != nil {
 		return err
 	}
 
 	var s string
 	switch i.(type) {
-		case int:
-			s = strconv.Itoa(i.(int))
-		case string:
-			s = i.(string)
+	case int:
+		s = strconv.Itoa(i.(int))
+	case string:
+		s = i.(string)
 	}
 
 	w := bufio.NewWriter(f)
@@ -83,21 +84,22 @@ func WriteFile(path string, i interface{}) error {
 //ReadFile
 func ReadFile(path string, n ...int) (string, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	defer f.Close()
 	if err != nil {
 		return "", err
 	}
 
 	switch {
-		case len(n) == 0:
-			dat, err := ioutil.ReadFile(path)
-			return string(dat), err
-		case len(n) == 1:
-			i := n[0]
-			r := bufio.NewReader(f)
-			dat, err := r.Peek(i)
-			return string(dat), err
-		case len(n) < 0 || len(n) > 1:
-			return "", errors.New("Internal error in "+reflect.TypeOf(func(){}).PkgPath())
+	case len(n) == 0:
+		dat, err := ioutil.ReadFile(path)
+		return string(dat), err
+	case len(n) == 1:
+		i := n[0]
+		r := bufio.NewReader(f)
+		dat, err := r.Peek(i)
+		return string(dat), err
+	case len(n) < 0 || len(n) > 1:
+		return "", errors.New("Internal error in " + reflect.TypeOf(func() {}).PkgPath())
 	}
 
 	return "", nil

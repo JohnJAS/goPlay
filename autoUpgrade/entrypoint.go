@@ -68,7 +68,7 @@ var OrgCurrentVersion string
 var CurrentVersion string
 
 //Node list of target cluster
-var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{},0)
+var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
 
 func init() {
 	var err error
@@ -86,7 +86,8 @@ func init() {
 
 	//create log file
 	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
-	_, err = cdfOS.CreateFile(LogFilePath)
+	LogFile, err = cdfOS.CreateFile(LogFilePath)
+	defer LogFile.Close()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -167,9 +168,7 @@ func main() {
 }
 
 //autoUpgrade main process
-func startExec(c *cli.Context) error {
-	var err error
-
+func startExec(c *cli.Context) (err error) {
 	if c.Bool("dry-run") {
 		if c.Value("dry-run") == "true" {
 			DryRun = true
@@ -192,32 +191,39 @@ func startExec(c *cli.Context) error {
 	//init upgrade step
 	err = initUpgradeStep()
 	if err != nil {
-		return err
+		return
 	}
 	log.Println()
 
 	//check connection to the cluster
 	err = checkConnection(cdfCommon.NewNodeList([]cdfCommon.Node{cdfCommon.NewNode(NodeInCluster, "")}, 1))
 	if err != nil {
-		return err
+		return
 	}
 	log.Println()
 
 	//get cluster information
 	err = getNodesInfo()
 	if err != nil {
-		return err
+		return
 	}
 	log.Println()
 
 	//get upgrade packages information
 	err = getUpgradePacksInfo()
 	if err != nil {
-		return err
+		return
 	}
 	log.Println()
 
-	return nil
+	//check upgrade packages
+	err = checkUpgradePacks()
+	if err != nil {
+		return
+	}
+	log.Println()
+
+	return
 }
 
 func check(err error) error {
@@ -300,19 +306,54 @@ func checkConnection(nodes cdfCommon.NodeList) error {
 
 //Getting nodes info...
 func getNodesInfo() (err error) {
+	// get current cdf verison
 	err = getCurrentVersion(false)
 	if err != nil {
 		return
 	}
 
-	var stderr bytes.Buffer
-	stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath)
+	err = getCurrentNodesInfo()
 	if err != nil {
-		cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 		return
 	}
-	fmt.Println(NodeList)
 
+	return
+}
+
+//
+func getCurrentNodesInfo() (err error) {
+	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "Nodes"))
+	if err != nil {
+		return err
+	}
+	if ! exist {
+		// get current nodes info
+		var stderr bytes.Buffer
+		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath)
+		if err != nil {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
+			return
+		}
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v",NodeList))
+		for i, node := range NodeList.List {
+			if i == NodeList.Num - 1 {
+				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name + "," + node.Role)
+			} else {
+				cdfOS.WriteFile(filepath.Join(TempFolder, "Nodes"), node.Name + "," + node.Role+";")
+			}
+		}
+	} else {
+		var content string
+		content, err = cdfOS.ReadFile(filepath.Join(TempFolder, "Nodes"))
+		if err != nil {
+			return
+		}
+		for _, slice := range strings.Split(string(content),";") {
+			elem := strings.Split(slice,",")
+			NodeList.AddNode(cdfCommon.NewNode(elem[0],elem[1]))
+		}
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v",NodeList))
+	}
 	return
 }
 
@@ -330,10 +371,6 @@ func getCurrentVersion(update bool) error {
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, stdout.String())
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentVersion: "+CurrentVersion)
-			_, err = cdfOS.CreateFile(filepath.Join(TempFolder, "CurrentVersion"))
-			if err != nil {
-				return err
-			}
 			err = cdfOS.WriteFile(filepath.Join(TempFolder, "CurrentVersion"), CurrentVersion)
 			if err != nil {
 				return err
@@ -356,16 +393,16 @@ func getUpgradePacksInfo() (err error) {
 }
 
 //Checking upgrade package(s)...
-func checkUpgradePacks() {
-
+func checkUpgradePacks() (err error) {
+	return
 }
 
 //Checking parameters(s)...
-func checkParameters() {
-
+func checkParameters() (err error) {
+	return
 }
 
 //Checking nodes info...
-func checkNodesInfo() {
-
+func checkNodesInfo() (err error) {
+	return
 }

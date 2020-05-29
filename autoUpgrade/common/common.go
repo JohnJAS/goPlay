@@ -21,6 +21,12 @@ const (
 	TIMESTAMP = "20060102150405"
 )
 
+//Node Role
+const (
+	MASTER = "master"
+	WORKER = "worker"
+)
+
 type Node struct {
 	Name string
 	Role string
