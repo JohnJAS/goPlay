@@ -9,7 +9,7 @@ const SysType = runtime.GOOS
 
 //Log level
 const (
-	DEBUG = 1 << iota	//
+	DEBUG = 1 << iota //
 	INFO
 	WARN
 	ERROR
@@ -21,10 +21,28 @@ const (
 	TIMESTAMP = "20060102150405"
 )
 
+type Node struct {
+	Name string
+	Role string
+}
+
+func NewNode(name string, role string) Node {
+	return Node{Name: name, Role: role}
+}
+
 //Nodes of k8s cluster
-type Nodes struct {
-	NodeList []string
-	Num      int
+type NodeList struct {
+	List []Node
+	Num  int
+}
+
+func NewNodeList(list []Node, num int) NodeList {
+	return NodeList{List: list, Num: num}
+}
+
+func (nodeList *NodeList) AddNode(node Node) {
+	nodeList.List = append(nodeList.List, node)
+	nodeList.Num++
 }
 
 //ConnectionStatus is used in SSH connection check

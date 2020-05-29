@@ -3,43 +3,20 @@ package k8s
 import (
 	"bytes"
 	"encoding/json"
-	"golang.org/x/crypto/ssh"
+	"strings"
 
 	cdfSSH "autoUpgrade/cdfutil/ssh"
+	cdfCommon "autoUpgrade/common"
 )
 
 //GetCurrentVersion get CDF current version
 func GetCurrentVersion(node string, userName string, keyPath string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	cmd := "kubectl get cm base-configmap -n core -o json"
-	//cmd := "/root/workspace/file.sh"
 
-	client, err := cdfSSH.CreatSSHClient(node, userName, keyPath)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmd)
 	if err != nil {
 		return
 	}
-
-	var session *ssh.Session
-	session, err = client.NewSession()
-	if err != nil {
-		return
-	}
-	defer session.Close()
-
-	session.Stdout = &outbuf
-	session.Stderr = &errbuf
-
-	//cmdReader, err := session.StdoutPipe()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//scanner := bufio.NewScanner(cmdReader)
-	//go func() {
-	//	for scanner.Scan() {
-	//		fmt.Println(scanner.Text())
-	//	}
-	//}()
-
-	err = session.Run(cmd)
 
 	var cmlv1 map[string]json.RawMessage
 	err = json.Unmarshal(outbuf.Bytes(), &cmlv1)
@@ -54,5 +31,31 @@ func GetCurrentVersion(node string, userName string, keyPath string) (currentVer
 	}
 
 	currentVersion = cmlv2["PLATFORM_VERSION"]
+	return
+}
+
+
+//GetCurrrentNodes get CDF current nodes
+func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, keyPath string) (errbuf bytes.Buffer, err error) {
+	cmdMaster := "kubectl get nodes -l master=true -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
+	cmdWorker := "kubectl get nodes -l 'master notin (true)' -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
+
+	var outbuf bytes.Buffer
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmdMaster)
+	if err != nil {
+		return
+	}
+	for _, node := range strings.Split(outbuf.String()," ") {
+		nodelist.AddNode(cdfCommon.NewNode(node,"master"))
+	}
+
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmdWorker)
+	if err != nil {
+		return
+	}
+	for _, node := range strings.Split(outbuf.String()," ") {
+		nodelist.AddNode(cdfCommon.NewNode(node,"worker"))
+	}
+
 	return
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	cdfOS "autoUpgrade/cdfutil/os"
 	cdfSSH "autoUpgrade/cdfutil/ssh"
 	cdfCommon "autoUpgrade/common"
+
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,6 +66,9 @@ var OrgCurrentVersion string
 
 //CDF current version(refresh after an CDF version upgrade)
 var CurrentVersion string
+
+//Node list of target cluster
+var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{},0)
 
 func init() {
 	var err error
@@ -192,10 +197,14 @@ func startExec(c *cli.Context) error {
 	log.Println()
 
 	//check connection to the cluster
-	err = checkConnection(cdfCommon.Nodes{
-		[]string{NodeInCluster},
-		1,
-	})
+	err = checkConnection(cdfCommon.NewNodeList([]cdfCommon.Node{cdfCommon.NewNode(NodeInCluster, "")}, 1))
+	if err != nil {
+		return err
+	}
+	log.Println()
+
+	//get cluster information
+	err = getNodesInfo()
 	if err != nil {
 		return err
 	}
@@ -257,20 +266,20 @@ func initUpgradeStep() error {
 	}
 }
 
-//
-func checkConnection(nodes cdfCommon.Nodes) error {
+//check connection to the cluster nodes
+func checkConnection(nodes cdfCommon.NodeList) error {
 	var err error
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking connection to the cluster...")
 
 	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
 
 	go func(chnl chan cdfCommon.ConnectionStatus) {
-		for _, node := range nodes.NodeList {
-			err := cdfSSH.CheckConnection(node, SysUser, KeyPath)
+		for _, node := range nodes.List {
+			err := cdfSSH.CheckConnection(node.Name, SysUser, KeyPath)
 			if err != nil {
-				chnl <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node)}
+				chnl <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node.Name)}
 			} else {
-				chnl <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node)}
+				chnl <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node.Name)}
 			}
 
 		}
@@ -289,12 +298,25 @@ func checkConnection(nodes cdfCommon.Nodes) error {
 	return check(err)
 }
 
-//Getting upgrade package(s) information...
-func getUpgradePacksInfo() (err error) {
+//Getting nodes info...
+func getNodesInfo() (err error) {
 	err = getCurrentVersion(false)
-	return check(err)
+	if err != nil {
+		return
+	}
+
+	var stderr bytes.Buffer
+	stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath)
+	if err != nil {
+		cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
+		return
+	}
+	fmt.Println(NodeList)
+
+	return
 }
 
+//Get current CDF version
 func getCurrentVersion(update bool) error {
 	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "CurrentVersion"))
 	if err != nil {
@@ -328,9 +350,9 @@ func getCurrentVersion(update bool) error {
 	return nil
 }
 
-//Getting nodes info...
-func getNodesInfo() {
-
+//Getting upgrade package(s) information...
+func getUpgradePacksInfo() (err error) {
+	return
 }
 
 //Checking upgrade package(s)...
