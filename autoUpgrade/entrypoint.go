@@ -165,7 +165,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error())
 	}
 }
 
@@ -269,8 +269,8 @@ func initUpgradeStep() error {
 }
 
 //check connection to the cluster nodes
-func checkConnection(nodes cdfCommon.NodeList) error {
-	var err error
+func checkConnection(nodes cdfCommon.NodeList) (err error) {
+
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking connection to the cluster...")
 
 	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
@@ -297,13 +297,19 @@ func checkConnection(nodes cdfCommon.NodeList) error {
 		}
 	}
 
-	return check(err)
+	return
 }
 
 //Getting nodes info...
 func getNodesInfo() (err error) {
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Getting nodes information...")
 	// get current cdf verison
 	err = getCurrentVersion(false)
+	if err != nil {
+		return
+	}
+
+	err = getOrgVersion()
 	if err != nil {
 		return
 	}
@@ -313,6 +319,23 @@ func getNodesInfo() (err error) {
 		return
 	}
 
+	return
+}
+
+func getOrgVersion() (err error) {
+	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "OrgCurrentVersion"))
+	if err != nil {
+		return err
+	}
+	if ! exist {
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion not found.")
+		OrgCurrentVersion = CurrentVersion
+		err = cdfOS.WriteFile(filepath.Join(TempFolder, "OrgCurrentVersion"),OrgCurrentVersion)
+	} else {
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion found.")
+		OrgCurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "OrgCurrentVersion"))
+	}
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "OrgCurrentVersion: "+OrgCurrentVersion)
 	return
 }
 
@@ -375,6 +398,7 @@ func getCurrentVersion(update bool) error {
 		}
 	} else {
 		CurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "CurrentVersion"))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentVersion: "+CurrentVersion)
 		if err != nil {
 			return err
 		}
@@ -385,6 +409,7 @@ func getCurrentVersion(update bool) error {
 
 //Getting upgrade package(s) information...
 func getUpgradePacksInfo() (err error) {
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Getting upgrade package(s) information...")
 	return
 }
 
