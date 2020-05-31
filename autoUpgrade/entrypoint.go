@@ -410,8 +410,43 @@ func getCurrentVersion(update bool) error {
 //Getting upgrade package(s) information...
 func getUpgradePacksInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Getting upgrade package(s) information...")
+
+	findUpgradePacks("../",[]string{"upgrade.sh"})
+
 	return
 }
+
+//https://www.socketloop.com/tutorials/golang-find-files-by-name-cross-platform-example
+func findUpgradePacks(targetDir string, pattern []string) {
+
+	for _, v := range pattern {
+		matches, err := filepath.Glob(targetDir + v)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if len(matches) != 0 {
+			fmt.Println("Found : ", matches)
+		}
+	}
+}
+
+//https://www.golangprograms.com/how-to-read-names-of-all-files-and-folders-in-current-directory.html
+func readCurrentDir() {
+	file, err := os.Open(".")
+	if err != nil {
+		log.Fatalf("failed opening directory: %s", err)
+	}
+	defer file.Close()
+
+	list,_ := file.Readdirnames(0) // 0 to read all files and folders
+	for _, name := range list {
+		fmt.Println(name)
+	}
+}
+
+//https://stackoverflow.com/questions/14668850/list-directory-in-go
 
 //Checking upgrade package(s)...
 func checkUpgradePacks() (err error) {
