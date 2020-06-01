@@ -330,7 +330,7 @@ func getOrgVersion() (err error) {
 	if ! exist {
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion not found.")
 		OrgCurrentVersion = CurrentVersion
-		err = cdfOS.WriteFile(filepath.Join(TempFolder, "OrgCurrentVersion"),OrgCurrentVersion)
+		err = cdfOS.WriteFile(filepath.Join(TempFolder, "OrgCurrentVersion"), OrgCurrentVersion)
 	} else {
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion found.")
 		OrgCurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "OrgCurrentVersion"))
@@ -411,42 +411,27 @@ func getCurrentVersion(update bool) error {
 func getUpgradePacksInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Getting upgrade package(s) information...")
 
-	findUpgradePacks("../",[]string{"upgrade.sh"})
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentDir: "+CurrentDir)
+
+	var packages []string
+
+	packages, err = cdfOS.ListDir(cdfOS.ParentDir(CurrentDir))
+	fmt.Println(packages)
+
+	for _, path := range packages {
+		tempPath := filepath.Join(cdfOS.ParentDir(CurrentDir),path)
+		pattern := "version.txt"
+		fmt.Println("tempPath"+tempPath)
+		ok, err := cdfOS.Filter(tempPath,[]string{pattern})
+		fmt.Println(ok)
+		fmt.Println(err)
+		//packages, err = cdfOS.ListDirWithFilter(tempPath,pattern,cdfOS.Filter)
+		fmt.Println(packages)
+	}
+
 
 	return
 }
-
-//https://www.socketloop.com/tutorials/golang-find-files-by-name-cross-platform-example
-func findUpgradePacks(targetDir string, pattern []string) {
-
-	for _, v := range pattern {
-		matches, err := filepath.Glob(targetDir + v)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if len(matches) != 0 {
-			fmt.Println("Found : ", matches)
-		}
-	}
-}
-
-//https://www.golangprograms.com/how-to-read-names-of-all-files-and-folders-in-current-directory.html
-func readCurrentDir() {
-	file, err := os.Open(".")
-	if err != nil {
-		log.Fatalf("failed opening directory: %s", err)
-	}
-	defer file.Close()
-
-	list,_ := file.Readdirnames(0) // 0 to read all files and folders
-	for _, name := range list {
-		fmt.Println(name)
-	}
-}
-
-//https://stackoverflow.com/questions/14668850/list-directory-in-go
 
 //Checking upgrade package(s)...
 func checkUpgradePacks() (err error) {

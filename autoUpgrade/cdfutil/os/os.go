@@ -104,3 +104,98 @@ func ReadFile(path string, n ...int) (string, error) {
 
 	return "", nil
 }
+
+func FilePathWalkDir(root string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
+}
+
+//https://www.socketloop.com/tutorials/golang-find-files-by-name-cross-platform-example
+func Filter(targetDir string, pattern []string) (bool, error){
+
+	for _, v := range pattern {
+		matches, err := filepath.Glob(filepath.Join(targetDir,v))
+
+		if err != nil {
+			return false, err
+		}
+
+		if len(matches) != 0 {
+			return true, err
+		}
+	}
+	return true, nil
+}
+
+func ListDir(root string) ([]string, error) {
+	var files []string
+	fileInfo, err := ioutil.ReadDir(root)
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		if file.IsDir() {
+			files = append(files, file.Name())
+		}
+	}
+	return files, nil
+}
+
+func ListDirWithFilter(root string,pattern string, filter func(string,[]string)(bool, error)) ([]string, error) {
+	var files []string
+	fileInfo, err := ioutil.ReadDir(root)
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		if file.IsDir() {
+			if ok, err := filter(file.Name(), []string{pattern}); ok{
+				files = append(files, file.Name())
+			}else if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return files, nil
+}
+
+
+func InspectDir(root string) ([]string, error) {
+	var files []string
+	fileInfo, err := ioutil.ReadDir(root)
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		files = append(files, file.Name())
+	}
+	return files, nil
+}
+
+func InspectDirWithFilter(root string, filter func(string)bool) ([]string, error) {
+	var files []string
+	fileInfo, err := ioutil.ReadDir(root)
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		if filter(root) {
+			files = append(files, file.Name())
+		}
+	}
+	return files, nil
+}
+
+func ParentDir(path string) string {
+	return filepath.Dir(path)
+}
