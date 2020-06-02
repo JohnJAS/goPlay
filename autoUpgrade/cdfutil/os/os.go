@@ -116,8 +116,9 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
-//https://www.socketloop.com/tutorials/golang-find-files-by-name-cross-platform-example
-func Filter(targetDir string, pattern []string) (bool, error){
+//Filter directory with pattern
+//pattern logical operation is OR
+func FilterOR(targetDir string, pattern []string) (bool, error){
 
 	for _, v := range pattern {
 		matches, err := filepath.Glob(filepath.Join(targetDir,v))
@@ -130,8 +131,33 @@ func Filter(targetDir string, pattern []string) (bool, error){
 			return true, err
 		}
 	}
-	return true, nil
+
+	return false, nil
 }
+
+//Filter directory with pattern
+//pattern logical operation is AND
+func FilterAND(targetDir string, pattern []string) (bool, error){
+	flag := true
+
+	for _, v := range pattern {
+		matches, err := filepath.Glob(filepath.Join(targetDir,v))
+
+		if err != nil {
+			return false, err
+		}
+
+		if len(matches) == 0 {
+			flag = false
+		}
+	}
+
+	if flag {
+		return true, nil
+	}
+	return false, nil
+}
+
 
 func ListDir(root string) ([]string, error) {
 	var files []string
@@ -148,7 +174,7 @@ func ListDir(root string) ([]string, error) {
 	return files, nil
 }
 
-func ListDirWithFilter(root string,pattern string, filter func(string,[]string)(bool, error)) ([]string, error) {
+func ListDirWithFilter(root string,pattern []string, filter func(string,[]string)(bool, error)) ([]string, error) {
 	var files []string
 	fileInfo, err := ioutil.ReadDir(root)
 	if err != nil {
@@ -157,7 +183,7 @@ func ListDirWithFilter(root string,pattern string, filter func(string,[]string)(
 
 	for _, file := range fileInfo {
 		if file.IsDir() {
-			if ok, err := filter(file.Name(), []string{pattern}); ok{
+			if ok, err := filter(filepath.Join(root, file.Name()), pattern); ok{
 				files = append(files, file.Name())
 			}else if err != nil {
 				return nil, err

@@ -68,6 +68,9 @@ var OrgCurrentVersion string
 //CDF current version(refresh after an CDF version upgrade)
 var CurrentVersion string
 
+//USER_UPGRADE_PACKS : upgrade packages user provided, they should be placed correctly.
+var USER_UPGRADE_PACKS []string
+
 //Node list of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
 
@@ -219,6 +222,20 @@ func startExec(c *cli.Context) (err error) {
 	}
 	log.Println()
 
+	err = checkParameters()
+	if err != nil {
+		return
+	}
+	log.Println()
+
+	err = checkNodesInfo()
+	if err != nil {
+		return
+	}
+	log.Println()
+	log.Println("===========================================================================")
+
+	log.Println("Start to dynamic upgrade process...")
 	return
 }
 
@@ -258,7 +275,7 @@ func initUpgradeStep() error {
 		if err != nil {
 			return err
 		}
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "UpgradeStep: "+result)
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "UPGRADE_STEP : "+result)
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "Previous upgrade step execution results found. Continuing with step "+result)
 		return nil
 	} else {
@@ -373,7 +390,26 @@ func getCurrentNodesInfo() (err error) {
 		}
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Node: %v", NodeList))
 	}
+	printNodes(NodeList)
 	return
+}
+
+func printNodes(nodeList cdfCommon.NodeList) {
+	var n []string
+	var m []string
+	var w []string
+	for _,node := range nodeList.List {
+		n = append(n, node.Name)
+		if node.Role == cdfCommon.MASTER {
+			m = append(m, node.Name)
+		}
+		if node.Role == cdfCommon.WORKER {
+			w = append(w, node.Name)
+		}
+	}
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_NODES       : %s",strings.Join(n," ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_MASTERS     : %s",strings.Join(m," ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_WORKERS     : %s",strings.Join(w," ")))
 }
 
 //Get current CDF version
@@ -398,7 +434,7 @@ func getCurrentVersion(update bool) error {
 		}
 	} else {
 		CurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "CurrentVersion"))
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentVersion: "+CurrentVersion)
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CURRENT_VERSION : "+CurrentVersion)
 		if err != nil {
 			return err
 		}
@@ -410,40 +446,38 @@ func getCurrentVersion(update bool) error {
 //Getting upgrade package(s) information...
 func getUpgradePacksInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Getting upgrade package(s) information...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CURRENT_DIR : "+CurrentDir)
 
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentDir: "+CurrentDir)
-
-	var packages []string
-
-	packages, err = cdfOS.ListDir(cdfOS.ParentDir(CurrentDir))
-	fmt.Println(packages)
-
-	for _, path := range packages {
-		tempPath := filepath.Join(cdfOS.ParentDir(CurrentDir),path)
-		pattern := "version.txt"
-		fmt.Println("tempPath"+tempPath)
-		ok, err := cdfOS.Filter(tempPath,[]string{pattern})
-		fmt.Println(ok)
-		fmt.Println(err)
-		//packages, err = cdfOS.ListDirWithFilter(tempPath,pattern,cdfOS.Filter)
-		fmt.Println(packages)
+	pattern := []string{
+		"version.txt",
+		"upgrade.sh",
 	}
 
+	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir),pattern,cdfOS.FilterAND)
+
+	fmt.Println(USER_UPGRADE_PACKS)
+
+	//sort packages
+
+	//create version:path map
 
 	return
 }
 
 //Checking upgrade package(s)...
 func checkUpgradePacks() (err error) {
+	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking upgrade package(s)...")
 	return
 }
 
 //Checking parameters(s)...
 func checkParameters() (err error) {
+	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking parameters(s)...")
 	return
 }
 
 //Checking nodes info...
 func checkNodesInfo() (err error) {
+	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking nodes info...")
 	return
 }
