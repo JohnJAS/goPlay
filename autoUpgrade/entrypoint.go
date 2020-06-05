@@ -74,6 +74,9 @@ var USER_UPGRADE_PACKS []string
 //Node list of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
 
+//VersionPathMap 202002:/path/package
+var VersionPathMap = make(map[string]string)
+
 func init() {
 	var err error
 
@@ -398,7 +401,7 @@ func printNodes(nodeList cdfCommon.NodeList) {
 	var n []string
 	var m []string
 	var w []string
-	for _,node := range nodeList.List {
+	for _, node := range nodeList.List {
 		n = append(n, node.Name)
 		if node.Role == cdfCommon.MASTER {
 			m = append(m, node.Name)
@@ -407,9 +410,9 @@ func printNodes(nodeList cdfCommon.NodeList) {
 			w = append(w, node.Name)
 		}
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_NODES       : %s",strings.Join(n," ")))
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_MASTERS     : %s",strings.Join(m," ")))
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_WORKERS     : %s",strings.Join(w," ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_NODES       : %s", strings.Join(n, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_MASTERS     : %s", strings.Join(m, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("ALL_WORKERS     : %s", strings.Join(w, " ")))
 }
 
 //Get current CDF version
@@ -453,31 +456,48 @@ func getUpgradePacksInfo() (err error) {
 		"upgrade.sh",
 	}
 
-	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir),pattern,cdfOS.FilterAND)
+	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir), pattern, cdfOS.FilterAND)
 
-	fmt.Println(USER_UPGRADE_PACKS)
-
-	//sort packages
+	log.Println(USER_UPGRADE_PACKS)
 
 	//create version:path map
+	err = initVersionPathMap()
+	log.Println(VersionPathMap)
 
 	return
 }
 
+func initVersionPathMap() error {
+	for _, pack := range USER_UPGRADE_PACKS {
+		path := filepath.Join(cdfOS.ParentDir(CurrentDir), pack)
+		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, "version.txt"))
+		if err != nil {
+			return err
+		}
+		versionSlice := strings.Split(fullVersion, ".")
+		if len(versionSlice) < 2 {
+			return errors.New(fmt.Sprintf("Invaild format of version.txt under '%s'", path))
+		}
+		version := versionSlice[0] + versionSlice[1]
+		VersionPathMap[version] = path
+	}
+	return nil
+}
+
 //Checking upgrade package(s)...
 func checkUpgradePacks() (err error) {
-	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking upgrade package(s)...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking upgrade package(s)...")
 	return
 }
 
 //Checking parameters(s)...
 func checkParameters() (err error) {
-	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking parameters(s)...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking parameters(s)...")
 	return
 }
 
 //Checking nodes info...
 func checkNodesInfo() (err error) {
-	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Checking nodes info...")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking nodes info...")
 	return
 }
