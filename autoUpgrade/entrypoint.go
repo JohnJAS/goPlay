@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	cdfJson "autoUpgrade/cdfutil/json"
 	cdfK8S "autoUpgrade/cdfutil/k8s"
 	cdfLog "autoUpgrade/cdfutil/log"
 	cdfOS "autoUpgrade/cdfutil/os"
@@ -70,6 +71,9 @@ var CurrentVersion string
 
 //USER_UPGRADE_PACKS : upgrade packages user provided, they should be placed correctly.
 var USER_UPGRADE_PACKS []string
+
+//UPGRADE_CHAIN : the upgrade path that autoUpgrade supportted
+var UPGRADE_CHAIN []string
 
 //Node list of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
@@ -171,7 +175,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error())
+		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error(),LogFilePath)
 	}
 }
 
@@ -457,31 +461,25 @@ func getUpgradePacksInfo() (err error) {
 	}
 
 	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir), pattern, cdfOS.FilterAND)
-
+	if err != nil {
+		return
+	}
 	log.Println(USER_UPGRADE_PACKS)
 
 	//create version:path map
 	err = initVersionPathMap()
+	if err != nil {
+		return
+	}
 	log.Println(VersionPathMap)
 
-	return
-}
-
-func initVersionPathMap() error {
-	for _, pack := range USER_UPGRADE_PACKS {
-		path := filepath.Join(cdfOS.ParentDir(CurrentDir), pack)
-		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, "version.txt"))
-		if err != nil {
-			return err
-		}
-		versionSlice := strings.Split(fullVersion, ".")
-		if len(versionSlice) < 2 {
-			return errors.New(fmt.Sprintf("Invaild format of version.txt under '%s'", path))
-		}
-		version := versionSlice[0] + versionSlice[1]
-		VersionPathMap[version] = path
+	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir,"autoUpgrade.json"))
+	if err != nil {
+		return
 	}
-	return nil
+	log.Println(UPGRADE_CHAIN)
+
+	return
 }
 
 //Checking upgrade package(s)...
@@ -500,4 +498,21 @@ func checkParameters() (err error) {
 func checkNodesInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking nodes info...")
 	return
+}
+
+func initVersionPathMap() error {
+	for _, pack := range USER_UPGRADE_PACKS {
+		path := filepath.Join(cdfOS.ParentDir(CurrentDir), pack)
+		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, "version.txt"))
+		if err != nil {
+			return err
+		}
+		versionSlice := strings.Split(fullVersion, ".")
+		if len(versionSlice) < 2 {
+			return errors.New(fmt.Sprintf("Invaild format of version.txt under '%s'", path))
+		}
+		version := versionSlice[0] + versionSlice[1]
+		VersionPathMap[version] = path
+	}
+	return nil
 }
