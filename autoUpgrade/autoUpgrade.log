@@ -1,0 +1,120 @@
+[root@localhost ITOM_Platform_Foundation_Standard_2020.08.0052]# ./autoUpgrade.sh -n shcCDFRH75vm01-0.hpeswlab.ne                                         t -d /tmp/workspaceincluster --dry-run
+System user not specified, using default value 'root'
+===========================================================================
+Determining start upgrade step...
+UPGRADE_STEP: 0
+
+Getting upgrade package(s) information...
+version:202008 packageName: ITOM_Platform_Foundation_Standard_2020.08.0052
+USER_UPGRADE_PACKS:202008
+NEEDED_UPGRADE_VERSIONS: 1
+UPGRADE_CHAIN: 201902 201905 201908 201911 202002 202005 202008
+
+Checking connection to the cluster...
+Connecting to shcCDFRH75vm01-0.hpeswlab.net ...
+Connected!
+Successfully connected to node shcCDFRH75vm01-0.hpeswlab.net
+
+Getting nodes info...
+ALL_NODES: shccdfrh75vm01-0.hpeswlab.net shccdfrh75vm02-0.hpeswlab.net shccdfrh75vm03-0.hpeswlab.net shccdfrh75vm                                         04.hpeswlab.net
+ALL_MASTERS: shccdfrh75vm01-0.hpeswlab.net shccdfrh75vm02-0.hpeswlab.net shccdfrh75vm03-0.hpeswlab.net
+ALL_WORKERS: shccdfrh75vm04.hpeswlab.net
+CURRENT_VERSION:202002
+
+Checking connection to all nodes...
+Connecting to shccdfrh75vm01-0.hpeswlab.net ...
+Connected!
+Successfully connected to node shccdfrh75vm01-0.hpeswlab.net
+Connecting to shccdfrh75vm02-0.hpeswlab.net ...
+Connected!
+Successfully connected to node shccdfrh75vm02-0.hpeswlab.net
+Connecting to shccdfrh75vm03-0.hpeswlab.net ...
+Connected!
+Successfully connected to node shccdfrh75vm03-0.hpeswlab.net
+Connecting to shccdfrh75vm04.hpeswlab.net ...
+Connected!
+Successfully connected to node shccdfrh75vm04.hpeswlab.net
+
+Checking upgrade package(s)...
+Current 202008 upgrade package can upgrade the installed 202002 CDF.
+UPGRADE_CHAIN         : 201902 201905 201908 201911 202002 202005 202008
+USER_TARGET_VERSION   : 202008
+CORRECT_UPGRADE_PATH  : 202008
+USER_UPGRADE_PACKS    : 202008
+INTERNAL_UPGRADE_PATH : 202008
+Correct upgrade package(s).
+
+Checking parameters(s)...
+
+Checking nodes info...
+===========================================================================
+VERSIONCOUNT: 0
+CURRENT UPGRADEVERSION: 202008
+CURRENT_UPGRADE_PACK_NAME: ITOM_Platform_Foundation_Standard_2020.08.0052
+
+========= Starting UPGRADE-STEP 1 "Copy 202008 upgrade package to all cluster nodes.." =========
+
+nodesList:shccdfrh75vm01-0.hpeswlab.net shccdfrh75vm02-0.hpeswlab.net shccdfrh75vm03-0.hpeswlab.net shccdfrh75vm04.hpeswlab.net
+upgradePackName: ITOM_Platform_Foundation_Standard_2020.08.0052
+Node: shccdfrh75vm01-0.hpeswlab.net process completed.
+upgradePackName: ITOM_Platform_Foundation_Standard_2020.08.0052
+Node: shccdfrh75vm02-0.hpeswlab.net process completed.
+upgradePackName: ITOM_Platform_Foundation_Standard_2020.08.0052
+Node: shccdfrh75vm03-0.hpeswlab.net process completed.
+upgradePackName: ITOM_Platform_Foundation_Standard_2020.08.0052
+Node: shccdfrh75vm04.hpeswlab.net process completed.
+
+========= Starting UPGRADE-STEP 2 "Upgrade -i Session on all master nodes" =========
+
+nodesList:shccdfrh75vm01-0.hpeswlab.net shccdfrh75vm02-0.hpeswlab.net shccdfrh75vm03-0.hpeswlab.net
+Start upgrade process on shccdfrh75vm01-0.hpeswlab.net
+origin cmd:upgrade.sh -i -y -t /tmp
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -i -y -t /tmp
+Node: shccdfrh75vm01-0.hpeswlab.net process completed.
+Start upgrade process on shccdfrh75vm02-0.hpeswlab.net
+origin cmd:upgrade.sh -i -y -t /tmp
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -i -y -t /tmp
+Node: shccdfrh75vm02-0.hpeswlab.net process completed.
+Start upgrade process on shccdfrh75vm03-0.hpeswlab.net
+origin cmd:upgrade.sh -i -y -t /tmp
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -i -y -t /tmp
+Node: shccdfrh75vm03-0.hpeswlab.net process completed.
+
+========= Starting UPGRADE-STEP 3 "Upgrade -i Session on all worker nodes" =========
+
+nodesList:shccdfrh75vm04.hpeswlab.net
+Start upgrade process on shccdfrh75vm04.hpeswlab.net
+origin cmd:upgrade.sh -i -y -t /tmp
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -i -y -t /tmp
+Node: shccdfrh75vm04.hpeswlab.net process completed.
+
+========= Starting UPGRADE-STEP 4 "Upgrade -u Session on one node" =========
+
+firstMaster:shccdfrh75vm01-0.hpeswlab.net
+Start upgrade process on shccdfrh75vm01-0.hpeswlab.net
+origin cmd:upgrade.sh -u -y
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -u -y
+Node: shccdfrh75vm01-0.hpeswlab.net process completed.
+
+========= Starting UPGRADE-STEP 5 "Upgrade -c Session on all nodes" =========
+
+nodesList:shccdfrh75vm01-0.hpeswlab.net shccdfrh75vm02-0.hpeswlab.net shccdfrh75vm03-0.hpeswlab.net shccdfrh75vm04.hpeswlab.net
+Start upgrade process on shccdfrh75vm01-0.hpeswlab.net
+origin cmd:upgrade.sh -c
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -c
+Node: shccdfrh75vm01-0.hpeswlab.net process completed.
+Start upgrade process on shccdfrh75vm02-0.hpeswlab.net
+origin cmd:upgrade.sh -c
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -c
+Node: shccdfrh75vm02-0.hpeswlab.net process completed.
+Start upgrade process on shccdfrh75vm03-0.hpeswlab.net
+origin cmd:upgrade.sh -c
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -c
+Node: shccdfrh75vm03-0.hpeswlab.net process completed.
+Start upgrade process on shccdfrh75vm04.hpeswlab.net
+origin cmd:upgrade.sh -c
+exec cmd:bash /tmp/workspaceincluster/ITOM_Platform_Foundation_Standard_2020.08.0052/upgrade.sh -c
+Node: shccdfrh75vm04.hpeswlab.net process completed.
+CURRENT_VERSION:202002
+Remove temp folder successfully.
+Congratulations! Auto upgrade process is finished successfully!
