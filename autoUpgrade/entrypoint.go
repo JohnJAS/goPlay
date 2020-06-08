@@ -175,7 +175,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error(),LogFilePath)
+		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error(), LogFilePath)
 	}
 }
 
@@ -464,20 +464,19 @@ func getUpgradePacksInfo() (err error) {
 	if err != nil {
 		return
 	}
-	log.Println(USER_UPGRADE_PACKS)
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
 
 	//create version:path map
 	err = initVersionPathMap()
 	if err != nil {
 		return
 	}
-	log.Println(VersionPathMap)
 
-	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir,"autoUpgrade.json"))
+	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, "autoUpgrade.json"))
 	if err != nil {
 		return
 	}
-	log.Println(UPGRADE_CHAIN)
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN : %s", strings.Join(UPGRADE_CHAIN, " ")))
 
 	return
 }
@@ -513,6 +512,7 @@ func initVersionPathMap() error {
 		}
 		version := versionSlice[0] + versionSlice[1]
 		VersionPathMap[version] = path
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Version : %s  PackageName : %s", version, pack))
 	}
 	return nil
 }
