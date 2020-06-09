@@ -69,6 +69,9 @@ var OrgCurrentVersion string
 //CDF current version(refresh after an CDF version upgrade)
 var CurrentVersion string
 
+//CDF version user want to upgrade (it should be together with the autoUpgrade script)
+var TargetVersion string
+
 //USER_UPGRADE_PACKS : upgrade packages user provided, they should be placed correctly.
 var USER_UPGRADE_PACKS []string
 
@@ -195,7 +198,10 @@ func startExec(c *cli.Context) (err error) {
 	log.Println("===========================================================================")
 
 	//init upgrade step
-	err = initUpgradeStep()
+	execfunc(initUpgradeStep)
+
+	//get upgrade packages information
+	err = getUpgradePacksInfo()
 	if err != nil {
 		return
 	}
@@ -215,8 +221,15 @@ func startExec(c *cli.Context) (err error) {
 	}
 	log.Println()
 
-	//get upgrade packages information
-	err = getUpgradePacksInfo()
+	//check connection to all nodes
+	err = checkConnection(NodeList)
+	if err != nil {
+		return
+	}
+	log.Println()
+
+	//calculate upgrade path
+	err = calculateUpgradePath(OrgCurrentVersion, TargetVersion)
 	if err != nil {
 		return
 	}
@@ -251,6 +264,16 @@ func check(err error) error {
 		return err
 	}
 	return nil
+}
+
+//https://www.jianshu.com/p/b333c5f34ef6
+func execfunc(f func() error) (err error) {
+	err = f()
+	if err != nil {
+		return
+	}
+	log.Println()
+	return
 }
 
 func startLog() {
@@ -464,13 +487,13 @@ func getUpgradePacksInfo() (err error) {
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
 
 	//create version:path map
 	err = initVersionPathMap()
 	if err != nil {
 		return
 	}
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
 
 	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, "autoUpgrade.json"))
 	if err != nil {
@@ -478,6 +501,12 @@ func getUpgradePacksInfo() (err error) {
 	}
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN : %s", strings.Join(UPGRADE_CHAIN, " ")))
 
+	return
+}
+
+//Calculating upgrade path...
+func calculateUpgradePath(fromVersion string, targetVersion string) (err error) {
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
 	return
 }
 
