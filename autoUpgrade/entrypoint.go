@@ -78,6 +78,9 @@ var USER_UPGRADE_PACKS []string
 //UPGRADE_CHAIN : the upgrade path that autoUpgrade supportted
 var UPGRADE_CHAIN []string
 
+//UPGRADE_PATH : upgrade path that autoUpgrade will execute
+var UPGRADE_PATH []string
+
 //Node list of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
 
@@ -233,7 +236,7 @@ func startExec(c *cli.Context) (err error) {
 	log.Println()
 
 	//calculate upgrade path
-	err = calculateUpgradePath(OrgCurrentVersion, TargetVersion)
+	err = calculateUpgradePath(OrgCurrentVersion)
 	if err != nil {
 		return
 	}
@@ -266,7 +269,7 @@ func startExec(c *cli.Context) (err error) {
 
 func execFunc(i ...interface{})(err error) {
 	if len(i) == 0 {
-		
+
 	}else if len(i) == 1 {
 
 	}else if len(i) == 2 {
@@ -513,8 +516,13 @@ func getUpgradePacksInfo() (err error) {
 }
 
 //Calculating upgrade path...
-func calculateUpgradePath(fromVersion string, targetVersion string) (err error) {
+func calculateUpgradePath(fromVersion string) (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
+	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir,"version.txt"))
+	if err != nil {
+		return
+	}
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("targetVersion : %s", targetVersion))
 	return
 }
 
@@ -549,7 +557,7 @@ func initVersionPathMap() error {
 		}
 		version := versionSlice[0] + versionSlice[1]
 		VersionPathMap[version] = path
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Version : %s  PackageName : %s", version, pack))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("version : %s  packageName : %s", version, pack))
 	}
 	return nil
 }
