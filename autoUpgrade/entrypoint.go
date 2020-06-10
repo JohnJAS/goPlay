@@ -198,7 +198,11 @@ func startExec(c *cli.Context) (err error) {
 	log.Println("===========================================================================")
 
 	//init upgrade step
-	execfunc(initUpgradeStep)
+	err = initUpgradeStep()
+	if err != nil {
+		return
+	}
+	log.Println()
 
 	//get upgrade packages information
 	err = getUpgradePacksInfo()
@@ -259,21 +263,25 @@ func startExec(c *cli.Context) (err error) {
 	return
 }
 
+
+func execFunc(i ...interface{})(err error) {
+	if len(i) == 0 {
+		
+	}else if len(i) == 1 {
+
+	}else if len(i) == 2 {
+
+	}else {
+		return errors.New("Internal error of illegal usage of execFunc function.")
+	}
+	return
+}
+
 func check(err error) error {
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-//https://www.jianshu.com/p/b333c5f34ef6
-func execfunc(f func() error) (err error) {
-	err = f()
-	if err != nil {
-		return
-	}
-	log.Println()
-	return
 }
 
 func startLog() {
