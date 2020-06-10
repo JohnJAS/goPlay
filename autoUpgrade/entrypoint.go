@@ -266,16 +266,26 @@ func startExec(c *cli.Context) (err error) {
 	return
 }
 
-
-func execFunc(i ...interface{})(err error) {
+func execFunc(f func(i ...interface{}) error, i ...interface{}) (err error) {
 	if len(i) == 0 {
-
-	}else if len(i) == 1 {
-
-	}else if len(i) == 2 {
-
-	}else {
-		return errors.New("Internal error of illegal usage of execFunc function.")
+		err = f()
+		log.Println()
+		return err
+	} else if len(i) == 1 {
+		switch i[0].(type) {
+		case string:
+			err = f(i[0].(string))
+			log.Println()
+			return err
+		case cdfCommon.NodeList:
+			err = f(i[0].(cdfCommon.NodeList))
+			log.Println()
+			return err
+		default:
+			return errors.New("INTERNAL ERROR : Unknown type within one parameter")
+		}
+	} else {
+		return errors.New("INTERNAL ERROR : Illegal parameter")
 	}
 	return
 }
@@ -367,11 +377,13 @@ func getNodesInfo() (err error) {
 		return
 	}
 
+	// get the origin version before current upgrade
 	err = getOrgVersion()
 	if err != nil {
 		return
 	}
 
+	//get current cluster info
 	err = getCurrentNodesInfo()
 	if err != nil {
 		return
@@ -380,6 +392,7 @@ func getNodesInfo() (err error) {
 	return
 }
 
+// get the origin version before current upgrade
 func getOrgVersion() (err error) {
 	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "OrgCurrentVersion"))
 	if err != nil {
@@ -397,7 +410,7 @@ func getOrgVersion() (err error) {
 	return
 }
 
-//
+//get current cluster info
 func getCurrentNodesInfo() (err error) {
 	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "Nodes"))
 	if err != nil {
@@ -518,7 +531,7 @@ func getUpgradePacksInfo() (err error) {
 //Calculating upgrade path...
 func calculateUpgradePath(fromVersion string) (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
-	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir,"version.txt"))
+	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, "version.txt"))
 	if err != nil {
 		return
 	}
