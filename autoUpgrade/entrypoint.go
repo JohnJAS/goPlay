@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	cdfJson "autoUpgrade/cdfutil/json"
@@ -63,25 +64,28 @@ var DryRun bool
 //LogLevel set log level in autoUpgrade log
 var LogLevel int
 
-//CDF version before upgrade(won't refresh)
+//OriginVersion CDF version before upgrade(won't refresh)
 var OriginVersion string
 
-//CDF current version(refresh after an CDF version upgrade)
+//CurrentVersion current CDF version (refresh after an CDF version upgrade)
 var CurrentVersion string
 
-//CDF version user want to upgrade (it should be together with the autoUpgrade script)
+//TargetVersion CDF version user want to upgrade (it should be together with the autoUpgrade script)
 var TargetVersion string
 
-//USER_UPGRADE_PACKS : upgrade packages user provided, they should be placed correctly.
-var USER_UPGRADE_PACKS []string
+//UserUpgradePacks : upgrade packages user provided, they should be placed correctly.
+var UserUpgradePacks []string
 
-//UPGRADE_CHAIN : the upgrade path that autoUpgrade supportted
-var UPGRADE_CHAIN []string
+//UpgradeChain : the upgrade path that autoUpgrade supportted
+var UpgradeChain []string
 
-//UPGRADE_PATH : upgrade path that autoUpgrade will execute
-var UPGRADE_PATH []string
+//UpgradePath : upgrade path that autoUpgrade will execute group by version
+var UpgradePath []string
 
-//Node list of target cluster
+//InternalUpgradePath : internal upgrade path that autoUpgrade will execute group by internal version
+var InternalUpgradePath []string
+
+//NodeList of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
 
 //VersionPathMap 202002:/path/package
@@ -473,7 +477,7 @@ func getCurrentVersion(update bool) error {
 		return err
 	}
 	if !exist || update {
-		var stdout,stderr bytes.Buffer
+		var stdout, stderr bytes.Buffer
 		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
@@ -506,11 +510,11 @@ func getUpgradePacksInfo() (err error) {
 		cdfCommon.UpgradeSH,
 	}
 
-	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir), pattern, cdfOS.FilterAND)
+	UserUpgradePacks, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir), pattern, cdfOS.FilterAND)
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(UserUpgradePacks, " ")))
 
 	//create version:path map
 	err = initVersionPathMap()
@@ -523,11 +527,11 @@ func getUpgradePacksInfo() (err error) {
 
 func getUpgradePath() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
-	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON))
+	UpgradeChain, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON))
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN  : %s", strings.Join(UPGRADE_CHAIN, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN  : %s", strings.Join(UpgradeChain, " ")))
 
 	fromVersion := transferVersionFormat(OriginVersion, false)
 	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
@@ -539,15 +543,45 @@ func getUpgradePath() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION   : %s", fromVersion))
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION : %s", targetVersion))
 
+	err = calculateUpgradePath(fromVersion,targetVersion)
+	if err != nil {
+		return err
+	}else if UpgradeChain == nil {
+		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion,targetVersion))
+	}
+
 	return
 }
 
-//Calculating upgrade path...
+func generateUpgradPath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) {
+	if internal {
+		InternalUpgradePath = append(InternalUpgradePath,"20000")
+	}else{
+		UpgradePath = append(UpgradePath,"10000")
+	}
+	wg.Done()
+}
+
+//calculate upgrade path
 func calculateUpgradePath(fromVersion string, targetVersion string) (err error) {
+	if fromVersion == targetVersion {
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go generateUpgradPath(fromVersion,targetVersion,false, &wg)
+	go generateUpgradPath(fromVersion,targetVersion,true, &wg)
+
+	wg.Wait()
+
+	log.Println(UpgradePath)
+	log.Println(InternalUpgradePath)
 
 	return
 }
 
+//verify upgrade path
 func verifyUpgradePath() (err error) {
 	return
 }
@@ -571,7 +605,7 @@ func checkNodesInfo() (err error) {
 }
 
 func initVersionPathMap() error {
-	for _, pack := range USER_UPGRADE_PACKS {
+	for _, pack := range UserUpgradePacks {
 		path := filepath.Join(cdfOS.ParentDir(CurrentDir), pack)
 		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, cdfCommon.VersionTXT))
 		if err != nil {
