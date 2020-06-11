@@ -64,7 +64,7 @@ var DryRun bool
 var LogLevel int
 
 //CDF version before upgrade(won't refresh)
-var OrgCurrentVersion string
+var OriginVersion string
 
 //CDF current version(refresh after an CDF version upgrade)
 var CurrentVersion string
@@ -235,8 +235,8 @@ func startExec(c *cli.Context) (err error) {
 	}
 	log.Println()
 
-	//calculate upgrade path
-	err = calculateUpgradePath(OrgCurrentVersion)
+	//get upgrade path
+	err = getUpgradePath()
 	if err != nil {
 		return
 	}
@@ -394,19 +394,19 @@ func getNodesInfo() (err error) {
 
 // get the origin version before current upgrade
 func getOrgVersion() (err error) {
-	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "OrgCurrentVersion"))
+	exist, err := cdfOS.PathExists(filepath.Join(TempFolder, "OriginVersion"))
 	if err != nil {
 		return err
 	}
-	if ! exist {
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion not found.")
-		OrgCurrentVersion = CurrentVersion
-		err = cdfOS.WriteFile(filepath.Join(TempFolder, "OrgCurrentVersion"), OrgCurrentVersion)
+	if !exist {
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OriginVersion not found.")
+		OriginVersion = CurrentVersion
+		err = cdfOS.WriteFile(filepath.Join(TempFolder, "OriginVersion"), OriginVersion)
 	} else {
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OrgCurrentVersion found.")
-		OrgCurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "OrgCurrentVersion"))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "File OriginVersion found.")
+		OriginVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "OriginVersion"))
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "OrgCurrentVersion: "+OrgCurrentVersion)
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "ORIGIN_VERSION  : "+OriginVersion)
 	return
 }
 
@@ -473,18 +473,18 @@ func getCurrentVersion(update bool) error {
 		return err
 	}
 	if !exist || update {
-		CurrentVersion, stdout, stderr, err := cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath)
+		var stdout,stderr bytes.Buffer
+		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return err
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, stdout.String())
-			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CurrentVersion: "+CurrentVersion)
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CURRENT_VERSION : "+CurrentVersion)
 			err = cdfOS.WriteFile(filepath.Join(TempFolder, "CurrentVersion"), CurrentVersion)
 			if err != nil {
 				return err
 			}
-			return nil
 		}
 	} else {
 		CurrentVersion, err = cdfOS.ReadFile(filepath.Join(TempFolder, "CurrentVersion"))
@@ -492,7 +492,6 @@ func getCurrentVersion(update bool) error {
 		if err != nil {
 			return err
 		}
-		return nil
 	}
 	return nil
 }
@@ -503,39 +502,53 @@ func getUpgradePacksInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "CURRENT_DIR : "+CurrentDir)
 
 	pattern := []string{
-		"version.txt",
-		"upgrade.sh",
+		cdfCommon.VersionTXT,
+		cdfCommon.UpgradeSH,
 	}
 
 	USER_UPGRADE_PACKS, err = cdfOS.ListDirWithFilter(cdfOS.ParentDir(CurrentDir), pattern, cdfOS.FilterAND)
 	if err != nil {
 		return
 	}
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
 
 	//create version:path map
 	err = initVersionPathMap()
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("USER_UPGRADE_PACKS : %s", strings.Join(USER_UPGRADE_PACKS, " ")))
 
-	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, "autoUpgrade.json"))
+	return
+}
+
+func getUpgradePath() (err error) {
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
+	UPGRADE_CHAIN, err = cdfJson.GetUpgradeChain(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON))
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN : %s", strings.Join(UPGRADE_CHAIN, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN  : %s", strings.Join(UPGRADE_CHAIN, " ")))
+
+	fromVersion := transferVersionFormat(OriginVersion, false)
+	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
+	if err != nil {
+		return
+	}
+	targetVersion = transferVersionFormat(targetVersion, false)
+
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION   : %s", fromVersion))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION : %s", targetVersion))
 
 	return
 }
 
 //Calculating upgrade path...
-func calculateUpgradePath(fromVersion string) (err error) {
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Calculating upgrade path...")
-	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, "version.txt"))
-	if err != nil {
-		return
-	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("targetVersion : %s", targetVersion))
+func calculateUpgradePath(fromVersion string, targetVersion string) (err error) {
+
+	return
+}
+
+func verifyUpgradePath() (err error) {
 	return
 }
 
@@ -560,17 +573,27 @@ func checkNodesInfo() (err error) {
 func initVersionPathMap() error {
 	for _, pack := range USER_UPGRADE_PACKS {
 		path := filepath.Join(cdfOS.ParentDir(CurrentDir), pack)
-		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, "version.txt"))
+		fullVersion, err := cdfOS.ReadFile(filepath.Join(path, cdfCommon.VersionTXT))
 		if err != nil {
 			return err
 		}
 		versionSlice := strings.Split(fullVersion, ".")
 		if len(versionSlice) < 2 {
-			return errors.New(fmt.Sprintf("Invaild format of version.txt under '%s'", path))
+			return errors.New(fmt.Sprintf("Invaild format of %s under '%s'", cdfCommon.VersionTXT, path))
 		}
 		version := versionSlice[0] + versionSlice[1]
 		VersionPathMap[version] = path
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("version : %s  packageName : %s", version, pack))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("PACKAGE_VERSION : %s  PACKAGE_NAME : %s", version, pack))
 	}
 	return nil
+}
+
+func transferVersionFormat(input string, withDot bool) (result string) {
+	versionSlice := strings.Split(input, ".")
+	if withDot {
+		result = versionSlice[0] + "." + versionSlice[1]
+	} else {
+		result = versionSlice[0] + versionSlice[1]
+	}
+	return
 }

@@ -16,6 +16,13 @@ const (
 	FATAL
 )
 
+//File Name
+const (
+	VersionTXT      = "version.txt"
+	UpgradeSH       = "upgrade.sh"
+	AutoUpgradeJSON = "autoUpgrade.json"
+)
+
 //Time Format
 const (
 	TIMESTAMP = "20060102150405"

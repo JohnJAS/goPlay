@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	cdfCommon "autoUpgrade/common"
 )
 
 type Release struct {
@@ -61,7 +63,7 @@ func GetUpgradeChain(path string) (result []string, err error) {
 func Test() {
 
 	// Open our jsonFile
-	jsonFile, err := os.Open("autoUpgrade.json")
+	jsonFile, err := os.Open(cdfCommon.AutoUpgradeJSON)
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		fmt.Println(err)
