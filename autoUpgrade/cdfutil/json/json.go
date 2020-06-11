@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -53,12 +54,68 @@ func GetUpgradeChain(path string) (result []string, err error) {
 		return
 	}
 
-	for _, slice := range autoUpgradeJson {
-		result = append(result,slice.TargetVersion)
+	for _, member := range autoUpgradeJson {
+		result = append(result,member.TargetVersion)
 	}
 
 	return
 }
+
+func GetIfMajor(path string, targeVersion string) (isMajor bool, err error) {
+	var autoUpgradeJson []Release
+	var data []byte
+
+	data, err = ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(data, &autoUpgradeJson)
+	if err != nil {
+		return
+	}
+
+	for _, member := range autoUpgradeJson {
+		if member.TargetVersion == targeVersion {
+			if member.MajorRelease == "true" {
+				return true,nil
+			}else{
+				return false,nil
+			}
+		}
+	}
+
+	return false,errors.New("fail to find in json file")
+}
+
+
+func GetIfVersionless(path string, targeVersion string) (isMajor bool, err error) {
+	var autoUpgradeJson []Release
+	var data []byte
+
+	data, err = ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(data, &autoUpgradeJson)
+	if err != nil {
+		return
+	}
+
+	for _, member := range autoUpgradeJson {
+		if member.TargetVersion == targeVersion {
+			if member.Versionless == "true" {
+				return true,nil
+			}else{
+				return false,nil
+			}
+		}
+	}
+
+	return false,errors.New("fail to find in json file")
+}
+
 
 func Test() {
 

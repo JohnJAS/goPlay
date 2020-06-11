@@ -543,21 +543,51 @@ func getUpgradePath() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION   : %s", fromVersion))
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION : %s", targetVersion))
 
-	err = calculateUpgradePath(fromVersion,targetVersion)
+	err = calculateUpgradePath(fromVersion, targetVersion)
 	if err != nil {
 		return err
-	}else if UpgradeChain == nil {
-		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion,targetVersion))
+	} else if UpgradeChain == nil {
+		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion, targetVersion))
 	}
 
 	return
 }
 
+//https://www.atatus.com/blog/goroutines-error-handling/
 func generateUpgradPath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) {
-	if internal {
-		InternalUpgradePath = append(InternalUpgradePath,"20000")
-	}else{
-		UpgradePath = append(UpgradePath,"10000")
+	startFlag := false
+	finishFlag := false
+	var isMajor, isVersionless bool
+
+	for _, tempVersion := range UpgradeChain {
+		//start record
+		if tempVersion == fromVersion {
+			startFlag = true
+			continue
+		}
+		//recording upgrade path
+		if startFlag == true && finishFlag == false {
+			if internal {
+				isMajor, _ = cdfJson.GetIfMajor(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+				if isMajor || tempVersion == targetVersion {
+					InternalUpgradePath = append(InternalUpgradePath, tempVersion)
+				}
+			} else {
+				isMajor, _ = cdfJson.GetIfMajor(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+				isVersionless, _ = cdfJson.GetIfVersionless(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+				if isMajor && !isVersionless || tempVersion == targetVersion {
+					UpgradePath = append(UpgradePath, tempVersion)
+				}
+			}
+			//stop record
+			if tempVersion == targetVersion {
+				finishFlag = true
+			}
+			//exit
+			if finishFlag == true {
+				break
+			}
+		}
 	}
 	wg.Done()
 }
@@ -570,8 +600,9 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go generateUpgradPath(fromVersion,targetVersion,false, &wg)
-	go generateUpgradPath(fromVersion,targetVersion,true, &wg)
+
+	go generateUpgradPath(fromVersion, targetVersion, false, &wg)
+	go generateUpgradPath(fromVersion, targetVersion, true, &wg)
 
 	wg.Wait()
 
