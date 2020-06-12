@@ -41,10 +41,10 @@ var Logger *log.Logger
 var CurrentDir string
 
 //UpgradeStep upgrade step already run
-var UpgradeStep int
+var UpgradeStep int = 0
 
 //UpgExecCall upgrade exec call count, init 1 for the first call
-var UpgExecCall int
+var UpgExecCall int = 1
 
 //NodeInCluster because the script may not be in the cluster, users must provide a node in the cluster.
 var NodeInCluster string
@@ -202,7 +202,7 @@ func startExec(c *cli.Context) (err error) {
 	}
 
 	//main process start
-	log.Println("===========================================================================")
+	log.Println("=====================================================================================================")
 
 	//init upgrade step
 	err = initUpgradeStep()
@@ -265,11 +265,11 @@ func startExec(c *cli.Context) (err error) {
 	}
 	log.Println()
 
-	log.Println("Starting main auto upgrade process...")
-	log.Println("===========================================================================")
+	log.Println("Starting auto upgrade main process...")
+	log.Println("=====================================================================================================")
 	err = autoUpgrade()
-
-	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Congratulations! Auto upgrade process is finished successfully!")
+	log.Println("=====================================================================================================")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Congratulations! Auto upgrade process is finished successfully!")
 	return
 }
 
@@ -337,7 +337,6 @@ func initUpgradeStep() error {
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, "Previous upgrade step execution results found. Continuing with step "+result)
 		return nil
 	} else {
-		UpgradeStep = 0
 		err := cdfOS.WriteFile(upgradeStepFilePath, UpgradeStep)
 		return check(err)
 	}
@@ -687,13 +686,74 @@ func transferVersionFormat(input string, withDot bool) (result string) {
 
 //start to upgrade CDF one version after one version
 func autoUpgrade() (err error) {
+	var message string
 	for i, version := range UpgradePath {
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_ITERATOR : %d",i))
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_VERSION  : %s",version))
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_PACKAGE  : %s",VersionPathMap[version]))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("** Starting upgrade CDF to %s **", version))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_ITERATOR : %d", i))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_VERSION  : %s", version))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_PACKAGE  : %s", VersionPathMap[version]))
 
+		message = fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
+		stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+
+		getCurrentVersion(true)
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("** Finished upgrade CDF to %s **", version))
 		log.Println()
 	}
-	log.Println("===========================================================================")
+
+	return
+}
+
+//stepExec
+func stepExec(mode string, message string, f func(...string) error, version string, args string) (err error) {
+	if UpgradeStep >= UpgExecCall {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Upgrade step '%d' '%s' already executed, continue to next one.", UpgExecCall, message))
+		return
+	}
+	printUpgradeStep(UpgExecCall, message)
+
+	err = f(mode, version, args)
+	if err != nil {
+		return
+	}
+
+	err = increaseUpgradeStep(UpgExecCall)
+
+	return
+}
+
+//
+func printUpgradeStep(step int, message string) {
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "")
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("--------- Starting UPGRADE-STEP %d \"%s\" ----------", step, message))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "")
+}
+
+func increaseUpgradeStep(step int) (err error) {
+	upgradeStepFilePath := filepath.Join(TempFolder, "UpgradeStep")
+	err = cdfOS.WriteFile(upgradeStepFilePath, step)
+	if err != nil {
+		return
+	}
+	UpgradeStep = step
+	UpgExecCall++
+
+	return
+}
+
+func copyUpgradePacksToCluster(args ...string) (err error) {
+	if len(args) < 2 {
+		return errors.New("Internal Error in function copyUpgradePacksToCluster")
+	}
+	if len(args) >= 2 {
+		mode := args[0]
+		version := args[1]
+		log.Println(mode)
+		log.Println(version)
+	}
+	return
+}
+
+func dynamicUpgradeProcess() (err error) {
 	return
 }

@@ -23,6 +23,14 @@ const (
 	AutoUpgradeJSON = "autoUpgrade.json"
 )
 
+//Action Type
+const (
+	AllMasters   = "AllMasters"
+	AllWorkers   = "AllWorkers"
+	SingleMaster = "SingleMaster"
+	AllNodes     = "AllNodes"
+)
+
 //Time Format
 const (
 	TIMESTAMP = "20060102150405"
