@@ -59,6 +59,8 @@ func TransferLogLevel(logLevel string) int {
 	}
 }
 
+//level    : definite by program
+//loglevel : definite by user
 func WriteLog(logger *log.Logger, level int, loglevel int, msg string, filePath ...string) {
 	timeStamp := time.Now().UTC().Format(time.RFC3339Nano)
 	log.SetFlags(0)

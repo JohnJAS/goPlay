@@ -264,10 +264,12 @@ func startExec(c *cli.Context) (err error) {
 		return
 	}
 	log.Println()
+
+	log.Println("Starting main auto upgrade process...")
 	log.Println("===========================================================================")
+	err = autoUpgrade()
 
-	log.Println("Start to dynamic upgrade process...")
-
+	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,"Congratulations! Auto upgrade process is finished successfully!")
 	return
 }
 
@@ -348,25 +350,28 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 
 	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
 
-	go func() {
-		for _, node := range nodes.List {
-			err := cdfSSH.CheckConnection(node.Name, SysUser, KeyPath)
+	for _, nodeObj := range nodes.List {
+		go func(node string) {
+			err := cdfSSH.CheckConnection(node, SysUser, KeyPath)
 			if err != nil {
-				ch <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node.Name)}
+				ch <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node)}
 			} else {
-				ch <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node.Name)}
+				ch <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node)}
 			}
+		}(nodeObj.Name)
+	}
 
-		}
-		close(ch)
-	}()
-
+	i := 0
 	for result := range ch {
 		if result.Connected {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
 			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration and try again.")
+		}
+		i++
+		if i == nodes.Num {
+			close(ch)
 		}
 	}
 
@@ -532,7 +537,7 @@ func getUpgradePath() (err error) {
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN          : %s", strings.Join(UpgradeChain, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN         : %s", strings.Join(UpgradeChain, " ")))
 
 	fromVersion := transferVersionFormat(OriginVersion, false)
 	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
@@ -541,24 +546,24 @@ func getUpgradePath() (err error) {
 	}
 	targetVersion = transferVersionFormat(targetVersion, false)
 
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION           : %s", fromVersion))
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION         : %s", targetVersion))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION          : %s", fromVersion))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION        : %s", targetVersion))
 
 	err = calculateUpgradePath(fromVersion, targetVersion)
 	if err != nil {
 		return err
-	} else if UpgradeChain == nil {
+	} else if UpgradePath == nil {
 		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion, targetVersion))
 	}
 
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("CORRECT_UPGRADE_PATH   : %s", strings.Join(UpgradePath, " ")))
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("INTERNAL_UPGRADE_PATH  : %s", strings.Join(InternalUpgradePath, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("CORRECT_UPGRADE_PATH  : %s", strings.Join(UpgradePath, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("INTERNAL_UPGRADE_PATH : %s", strings.Join(InternalUpgradePath, " ")))
 
 	return
 }
 
 //generate upgrade path
-func generateUpgradePath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) (err error){
+func generateUpgradePath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) (err error) {
 	startFlag := false
 	finishFlag := false
 	var isMajor, isVersionless bool
@@ -608,18 +613,17 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 		return nil
 	}
 
-
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func(){
+	go func() {
 		errRT := generateUpgradePath(fromVersion, targetVersion, false, &wg)
-		if errRT!= nil {
+		if errRT != nil {
 			err = errRT
 		}
 	}()
-	go func(){
+	go func() {
 		errRT := generateUpgradePath(fromVersion, targetVersion, true, &wg)
-		if errRT!= nil {
+		if errRT != nil {
 			err = errRT
 		}
 	}()
@@ -669,6 +673,8 @@ func initVersionPathMap() error {
 	return nil
 }
 
+//transfer version format
+//example: 2020.02.002 to 202002 or 2020.02
 func transferVersionFormat(input string, withDot bool) (result string) {
 	versionSlice := strings.Split(input, ".")
 	if withDot {
@@ -676,5 +682,18 @@ func transferVersionFormat(input string, withDot bool) (result string) {
 	} else {
 		result = versionSlice[0] + versionSlice[1]
 	}
+	return
+}
+
+//start to upgrade CDF one version after one version
+func autoUpgrade() (err error) {
+	for i, version := range UpgradePath {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_ITERATOR : %d",i))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_VERSION  : %s",version))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_PACKAGE  : %s",VersionPathMap[version]))
+
+		log.Println()
+	}
+	log.Println("===========================================================================")
 	return
 }
