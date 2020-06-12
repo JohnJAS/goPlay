@@ -267,6 +267,7 @@ func startExec(c *cli.Context) (err error) {
 	log.Println("===========================================================================")
 
 	log.Println("Start to dynamic upgrade process...")
+
 	return
 }
 
@@ -347,18 +348,18 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 
 	ch := make(chan cdfCommon.ConnectionStatus, nodes.Num)
 
-	go func(chnl chan cdfCommon.ConnectionStatus) {
+	go func() {
 		for _, node := range nodes.List {
 			err := cdfSSH.CheckConnection(node.Name, SysUser, KeyPath)
 			if err != nil {
-				chnl <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node.Name)}
+				ch <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node.Name)}
 			} else {
-				chnl <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node.Name)}
+				ch <- cdfCommon.ConnectionStatus{true, fmt.Sprintf("Successfully connected to node %s", node.Name)}
 			}
 
 		}
-		close(chnl)
-	}(ch)
+		close(ch)
+	}()
 
 	for result := range ch {
 		if result.Connected {
@@ -531,7 +532,7 @@ func getUpgradePath() (err error) {
 	if err != nil {
 		return
 	}
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN  : %s", strings.Join(UpgradeChain, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN          : %s", strings.Join(UpgradeChain, " ")))
 
 	fromVersion := transferVersionFormat(OriginVersion, false)
 	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
@@ -540,8 +541,8 @@ func getUpgradePath() (err error) {
 	}
 	targetVersion = transferVersionFormat(targetVersion, false)
 
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION   : %s", fromVersion))
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION : %s", targetVersion))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION           : %s", fromVersion))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION         : %s", targetVersion))
 
 	err = calculateUpgradePath(fromVersion, targetVersion)
 	if err != nil {
@@ -550,11 +551,14 @@ func getUpgradePath() (err error) {
 		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion, targetVersion))
 	}
 
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("CORRECT_UPGRADE_PATH   : %s", strings.Join(UpgradePath, " ")))
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("INTERNAL_UPGRADE_PATH  : %s", strings.Join(InternalUpgradePath, " ")))
+
 	return
 }
 
-//https://www.atatus.com/blog/goroutines-error-handling/
-func generateUpgradPath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) {
+//generate upgrade path
+func generateUpgradePath(fromVersion string, targetVersion string, internal bool, wg *sync.WaitGroup) (err error){
 	startFlag := false
 	finishFlag := false
 	var isMajor, isVersionless bool
@@ -567,14 +571,19 @@ func generateUpgradPath(fromVersion string, targetVersion string, internal bool,
 		}
 		//recording upgrade path
 		if startFlag == true && finishFlag == false {
+			isMajor, err = cdfJson.GetIfMajor(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+			if err != nil {
+				break
+			}
 			if internal {
-				isMajor, _ = cdfJson.GetIfMajor(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
 				if isMajor || tempVersion == targetVersion {
 					InternalUpgradePath = append(InternalUpgradePath, tempVersion)
 				}
 			} else {
-				isMajor, _ = cdfJson.GetIfMajor(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
-				isVersionless, _ = cdfJson.GetIfVersionless(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+				isVersionless, err = cdfJson.GetIfVersionless(filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON), tempVersion)
+				if err != nil {
+					break
+				}
 				if isMajor && !isVersionless || tempVersion == targetVersion {
 					UpgradePath = append(UpgradePath, tempVersion)
 				}
@@ -590,6 +599,7 @@ func generateUpgradPath(fromVersion string, targetVersion string, internal bool,
 		}
 	}
 	wg.Done()
+	return
 }
 
 //calculate upgrade path
@@ -598,16 +608,22 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 		return nil
 	}
 
+
 	var wg sync.WaitGroup
 	wg.Add(2)
-
-	go generateUpgradPath(fromVersion, targetVersion, false, &wg)
-	go generateUpgradPath(fromVersion, targetVersion, true, &wg)
-
+	go func(){
+		errRT := generateUpgradePath(fromVersion, targetVersion, false, &wg)
+		if errRT!= nil {
+			err = errRT
+		}
+	}()
+	go func(){
+		errRT := generateUpgradePath(fromVersion, targetVersion, true, &wg)
+		if errRT!= nil {
+			err = errRT
+		}
+	}()
 	wg.Wait()
-
-	log.Println(UpgradePath)
-	log.Println(InternalUpgradePath)
 
 	return
 }
