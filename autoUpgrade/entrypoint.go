@@ -753,7 +753,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		log.Println(version)
 	}
 
-	cdfSSH.CopyFile(NodeInCluster,SysUser,KeyPath,cdfCommon.AutoUpgradeJSON,"/tmp/autoUpgrade.json")
+	cdfSSH.CopyFile(NodeInCluster,SysUser,KeyPath,cdfCommon.AutoUpgradeJSON,filepath.ToSlash(filepath.Join(WorkDir,cdfCommon.AutoUpgradeJSON)))
 	return
 }
 
