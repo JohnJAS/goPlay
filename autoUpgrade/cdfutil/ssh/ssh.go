@@ -2,13 +2,15 @@ package ssh
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/user"
 	"path/filepath"
-
-	"golang.org/x/crypto/ssh"
 )
 
 func getKeyFile(keyPath string) (key ssh.Signer, err error) {
@@ -52,7 +54,6 @@ func CreatSSHClient(node string, userName string, keyPath string) (client *ssh.C
 
 }
 
-
 func CheckConnection(node string, userName string, keyPath string) (err error) {
 	var client *ssh.Client
 	client, err = CreatSSHClient(node, userName, keyPath)
@@ -69,7 +70,6 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 
 	return
 }
-
 
 func SSHExecCmd(node string, userName string, keyPath string, cmd string) (err error) {
 	var client *ssh.Client
@@ -126,4 +126,43 @@ func SSHExecCmdReturnResult(node string, userName string, keyPath string, cmd st
 
 	return
 
+}
+
+func CopyFile(node string, userName string, keyPath string, srcfile string, desfile string) (err error) {
+	var conn *ssh.Client
+
+	conn, err = CreatSSHClient(node, userName, keyPath)
+	if err != nil {
+		return
+	}
+
+	// create new SFTP client
+	c, err := sftp.NewClient(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	fmt.Println(srcfile)
+	fmt.Println(desfile)
+
+	s, err := os.Open(srcfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
+
+	d, err := c.Create(desfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer d.Close()
+
+	// Copy the file
+	var r int64
+	r, err = d.ReadFrom(s)
+	fmt.Sprintln("Read : %d", r)
+
+
+	return
 }

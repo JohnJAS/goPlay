@@ -126,7 +126,7 @@ func main() {
 	os.Args = append(os.Args, "-n")
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
-	os.Args = append(os.Args, "./dir")
+	os.Args = append(os.Args, "/tmp/")
 	startLog()
 	defer LogFile.Close()
 
@@ -612,6 +612,7 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 		return nil
 	}
 
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
@@ -751,6 +752,8 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		log.Println(mode)
 		log.Println(version)
 	}
+
+	cdfSSH.CopyFile(NodeInCluster,SysUser,KeyPath,cdfCommon.AutoUpgradeJSON,"/tmp/autoUpgrade.json")
 	return
 }
 
