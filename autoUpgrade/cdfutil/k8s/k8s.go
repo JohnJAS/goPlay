@@ -35,7 +35,7 @@ func GetCurrentVersion(node string, userName string, keyPath string, port string
 }
 
 //GetCurrrentNodes get CDF current nodes
-func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, port string, keyPath string) (errbuf bytes.Buffer, err error) {
+func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, keyPath string, port string) (errbuf bytes.Buffer, err error) {
 	cmdMaster := "kubectl get nodes -l master=true -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 	cmdWorker := "kubectl get nodes -l 'master notin (true)' -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 
