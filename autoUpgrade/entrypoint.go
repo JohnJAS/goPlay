@@ -58,6 +58,9 @@ var SysUser string
 //KeyPath is the rsa key path
 var KeyPath string
 
+//Port is SSH port
+var Port string
+
 //DryRun for autoUpgrade dry-run
 var DryRun bool
 
@@ -87,6 +90,9 @@ var InternalUpgradePath []string
 
 //NodeList of target cluster
 var NodeList = cdfCommon.NewNodeList([]cdfCommon.Node{}, 0)
+
+//VersionPackMap 202002:packname
+var VersionPackMap = make(map[string]string)
 
 //VersionPathMap 202002:/path/package
 var VersionPathMap = make(map[string]string)
@@ -163,6 +169,13 @@ func main() {
 				Aliases:     []string{"rsakey"},
 				Destination: &KeyPath,
 				Usage:       "The RSA key for the SSH connection to the nodes inside the cluster.",
+			},
+			&cli.StringFlag{
+				Name:        "p",
+				Value:       "22",
+				Aliases:     []string{"port"},
+				Destination: &Port,
+				Usage:       "The port for the SSH connection to the nodes inside the cluster.",
 			},
 			&cli.StringFlag{
 				Name:    "o",
@@ -323,7 +336,7 @@ func initUpgradeStep() error {
 	upgradeStepFilePath := filepath.Join(TempFolder, "UpgradeStep")
 	exist, _ := cdfOS.PathExists(upgradeStepFilePath)
 	if exist == true {
-		result, err := cdfOS.ReadFile(upgradeStepFilePath, 1024)
+		result, err := cdfOS.ReadFile(upgradeStepFilePath)
 		if err != nil && err != io.EOF {
 			return err
 		} else if result == "" {
@@ -351,7 +364,7 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 
 	for _, nodeObj := range nodes.List {
 		go func(node string) {
-			err := cdfSSH.CheckConnection(node, SysUser, KeyPath)
+			err := cdfSSH.CheckConnection(node, SysUser, KeyPath, Port)
 			if err != nil {
 				ch <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node)}
 			} else {
@@ -428,7 +441,7 @@ func getCurrentNodesInfo() (err error) {
 	if !exist {
 		// get current nodes info
 		var stderr bytes.Buffer
-		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath)
+		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath, Port)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return
@@ -483,7 +496,7 @@ func getCurrentVersion(update bool) error {
 	}
 	if !exist || update {
 		var stdout, stderr bytes.Buffer
-		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath)
+		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath, Port)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return err
@@ -612,7 +625,6 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 		return nil
 	}
 
-
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
@@ -667,6 +679,7 @@ func initVersionPathMap() error {
 			return errors.New(fmt.Sprintf("Invaild format of %s under '%s'", cdfCommon.VersionTXT, path))
 		}
 		version := versionSlice[0] + versionSlice[1]
+		VersionPackMap[version] = pack
 		VersionPathMap[version] = path
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("PACKAGE_VERSION : %s  PACKAGE_NAME : %s", version, pack))
 	}
@@ -687,15 +700,21 @@ func transferVersionFormat(input string, withDot bool) (result string) {
 
 //start to upgrade CDF one version after one version
 func autoUpgrade() (err error) {
-	var message string
 	for i, version := range UpgradePath {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("** Starting upgrade CDF to %s **", version))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_ITERATOR : %d", i))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_VERSION  : %s", version))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_PACKAGE  : %s", VersionPathMap[version]))
 
-		message = fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
-		stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+		err = prepareClusterWorkSpace(version)
+		if err != nil {
+			return
+		}
+
+		err = dynamicUpgradeProcess(version)
+		if err != nil {
+			return
+		}
 
 		getCurrentVersion(true)
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("** Finished upgrade CDF to %s **", version))
@@ -742,21 +761,81 @@ func increaseUpgradeStep(step int) (err error) {
 	return
 }
 
+func transferMode(mode string) (nodeList cdfCommon.NodeList) {
+	switch mode {
+	case cdfCommon.SingleMaster:
+		nodeList.AddNode(cdfCommon.NewNode(NodeInCluster, ""))
+	case cdfCommon.AllMasters:
+		for _, node := range NodeList.List {
+			if node.Role == cdfCommon.MASTER {
+				nodeList.AddNode(node)
+			}
+		}
+	case cdfCommon.AllWorkers:
+		for _, node := range NodeList.List {
+			if node.Role == cdfCommon.WORKER {
+				nodeList.AddNode(node)
+			}
+		}
+	case cdfCommon.AllNodes:
+		nodeList = NodeList
+	default:
+		panic("Wrong usage of function transferMode in main package.")
+	}
+	return
+}
+
+func prepareClusterWorkSpace(version string) (err error) {
+	message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
+	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+	return
+}
+
+func dynamicUpgradeProcess(version string) (err error) {
+	return
+}
+
 func copyUpgradePacksToCluster(args ...string) (err error) {
+	var mode, version string
 	if len(args) < 2 {
 		return errors.New("Internal Error in function copyUpgradePacksToCluster")
 	}
 	if len(args) >= 2 {
-		mode := args[0]
-		version := args[1]
-		log.Println(mode)
-		log.Println(version)
+		mode = args[0]
+		version = args[1]
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("mode: %s", mode))
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
 	}
 
-	cdfSSH.CopyFile(NodeInCluster,SysUser,KeyPath,cdfCommon.AutoUpgradeJSON,filepath.ToSlash(filepath.Join(WorkDir,cdfCommon.AutoUpgradeJSON)))
-	return
-}
+	nodeList := transferMode(mode)
 
-func dynamicUpgradeProcess() (err error) {
+	ch := make(chan cdfCommon.CopyStatus, nodeList.Num)
+
+	for _, nodeObj := range nodeList.List {
+		go func(node string) {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
+			err := cdfSSH.CopyFileLocal2Remote(node, SysUser, KeyPath, Port, "C:\\Users\\shengj\\workspace\\k8s.tar", filepath.ToSlash(filepath.Join(WorkDir, "k8s.tar")))
+			if err == nil {
+				ch <- cdfCommon.CopyStatus{true, fmt.Sprintf("Node: %s process completed.", node)}
+			} else {
+				ch <- cdfCommon.CopyStatus{false, fmt.Sprintf("Node: %s process Failed.", node)}
+			}
+		}(nodeObj.Name)
+	}
+
+	i := 0
+	for result := range ch {
+		if result.Copied {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
+		} else {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
+			err = errors.New("Failed to copy upgrade package to all cluster nodes...")
+		}
+		i++
+		if i == nodeList.Num {
+			close(ch)
+		}
+	}
+
 	return
 }

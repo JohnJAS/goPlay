@@ -411,5 +411,63 @@
                 "command": "upgrade.sh -c"
             }
         ]
+    },
+    {
+        "targetVersion": "202011",
+        "fromVersion": "201908,201911,202002,202005,202008",
+        "majorRelease" : "false",
+        "versionless" : "true",
+        "rpmPkgCheck" : 
+        [
+            {
+                "name" : "container-selinux",
+                "version" : "2.74",
+                "action" : "allNodes"
+            }
+        ],
+        "steps": 
+        [
+            {
+                "order": "1",
+                "action": "allMasters",
+                "description": "Upgrade -i Session on all master nodes",
+                "command": "upgrade.sh -i -y -t /tmp"
+            },
+            {
+                "order": "2",
+                "action": "allWorkers",
+                "description": "Upgrade -i Session on all worker nodes",
+                "command": "upgrade.sh -i -y -t /tmp",
+                "args" : 
+                [
+                    {
+                        "option" : "--drain",
+                        "type" : "optional",
+                        "nullable" : "true",
+                        "value" : "",
+                        "description" : "Drain the node before upgrade -i session."
+                    },
+                    {
+                        "option" : "--drain-timeout",
+                        "type" : "optional",
+                        "nullable" : "false",
+                        "value" : "",
+                        "description" : "The length of time to drain current node. Default value is 3600 seconds."
+                    }
+                ]
+            },
+            {
+                "order": "3",
+                "action": "singleMaster",
+                "description": "Upgrade -u Session on one node",
+                "command": "upgrade.sh -u -y"
+            },
+            {
+                "order": "4",
+                "action": "allNodes",
+                "description": "Upgrade -c Session on all nodes",
+                "command": "upgrade.sh -c"
+            }
+        ]
     }
 ]

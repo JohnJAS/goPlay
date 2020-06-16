@@ -10,10 +10,10 @@ import (
 )
 
 //GetCurrentVersion get CDF current version
-func GetCurrentVersion(node string, userName string, keyPath string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
+func GetCurrentVersion(node string, userName string, keyPath string, port string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	cmd := "kubectl get cm base-configmap -n core -o json"
 
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmd)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmd)
 	if err != nil {
 		return
 	}
@@ -34,27 +34,26 @@ func GetCurrentVersion(node string, userName string, keyPath string) (currentVer
 	return
 }
 
-
 //GetCurrrentNodes get CDF current nodes
-func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, keyPath string) (errbuf bytes.Buffer, err error) {
+func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, port string, keyPath string) (errbuf bytes.Buffer, err error) {
 	cmdMaster := "kubectl get nodes -l master=true -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 	cmdWorker := "kubectl get nodes -l 'master notin (true)' -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 
 	var outbuf bytes.Buffer
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmdMaster)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmdMaster)
 	if err != nil {
 		return
 	}
-	for _, node := range strings.Split(outbuf.String()," ") {
-		nodelist.AddNode(cdfCommon.NewNode(node,cdfCommon.MASTER))
+	for _, node := range strings.Split(outbuf.String(), " ") {
+		nodelist.AddNode(cdfCommon.NewNode(node, cdfCommon.MASTER))
 	}
 
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, cmdWorker)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmdWorker)
 	if err != nil {
 		return
 	}
-	for _, node := range strings.Split(outbuf.String()," ") {
-		nodelist.AddNode(cdfCommon.NewNode(node,cdfCommon.WORKER))
+	for _, node := range strings.Split(outbuf.String(), " ") {
+		nodelist.AddNode(cdfCommon.NewNode(node, cdfCommon.WORKER))
 	}
 
 	return

@@ -31,7 +31,7 @@ func getKeyFile(keyPath string) (key ssh.Signer, err error) {
 	return
 }
 
-func CreatSSHClient(node string, userName string, keyPath string) (client *ssh.Client, err error) {
+func CreatSSHClient(node string, userName string, keyPath string, port string) (client *ssh.Client, err error) {
 	// Get rsa key
 	var key ssh.Signer
 	key, err = getKeyFile(keyPath)
@@ -47,16 +47,13 @@ func CreatSSHClient(node string, userName string, keyPath string) (client *ssh.C
 		},
 	}
 
-	host := node
-	port := "22"
-
-	return ssh.Dial("tcp", net.JoinHostPort(host, port), config)
+	return ssh.Dial("tcp", net.JoinHostPort(node, port), config)
 
 }
 
-func CheckConnection(node string, userName string, keyPath string) (err error) {
+func CheckConnection(node string, userName string, keyPath string, port string) (err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath)
+	client, err = CreatSSHClient(node, userName, keyPath, port)
 	if err != nil {
 		return
 	}
@@ -71,9 +68,9 @@ func CheckConnection(node string, userName string, keyPath string) (err error) {
 	return
 }
 
-func SSHExecCmd(node string, userName string, keyPath string, cmd string) (err error) {
+func SSHExecCmd(node string, userName string, keyPath string, port string, cmd string) (err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath)
+	client, err = CreatSSHClient(node, userName, keyPath, port)
 	if err != nil {
 		return
 	}
@@ -105,9 +102,9 @@ func SSHExecCmd(node string, userName string, keyPath string, cmd string) (err e
 
 }
 
-func SSHExecCmdReturnResult(node string, userName string, keyPath string, cmd string) (outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
+func SSHExecCmdReturnResult(node string, userName string, keyPath string, port string, cmd string) (outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath)
+	client, err = CreatSSHClient(node, userName, keyPath, port)
 	if err != nil {
 		return
 	}
@@ -128,10 +125,10 @@ func SSHExecCmdReturnResult(node string, userName string, keyPath string, cmd st
 
 }
 
-func CopyFile(node string, userName string, keyPath string, srcfile string, desfile string) (err error) {
+func CopyFileLocal2Remote(node string, userName string, keyPath string, port string, srcfile string, desfile string) (err error) {
 	var conn *ssh.Client
 
-	conn, err = CreatSSHClient(node, userName, keyPath)
+	conn, err = CreatSSHClient(node, userName, keyPath, port)
 	if err != nil {
 		return
 	}
@@ -142,9 +139,6 @@ func CopyFile(node string, userName string, keyPath string, srcfile string, desf
 		log.Fatal(err)
 	}
 	defer c.Close()
-
-	fmt.Println(srcfile)
-	fmt.Println(desfile)
 
 	s, err := os.Open(srcfile)
 	if err != nil {
@@ -162,7 +156,6 @@ func CopyFile(node string, userName string, keyPath string, srcfile string, desf
 	var r int64
 	r, err = d.ReadFrom(s)
 	fmt.Sprintln("Read : %d", r)
-
 
 	return
 }
