@@ -132,7 +132,7 @@ func main() {
 	os.Args = append(os.Args, "-n")
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
-	os.Args = append(os.Args, "/tmp/")
+	os.Args = append(os.Args, "/tmp/workspaceInCluster")
 	startLog()
 	defer LogFile.Close()
 
@@ -785,9 +785,45 @@ func transferMode(mode string) (nodeList cdfCommon.NodeList) {
 	return
 }
 
+func FilePathWalkDir(root string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		files = append(files, path)
+		return nil
+	})
+	return files, err
+}
+
 func prepareClusterWorkSpace(version string) (err error) {
-	message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
-	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+	var files []string
+
+	// filepath.Walk
+	files, err = FilePathWalkDir(VersionPathMap[version])
+	if err != nil {
+		panic(err)
+	}
+
+	parentDir := cdfOS.ParentDir(CurrentDir)
+	for _, file := range files {
+		fmt.Println(file)
+		info, _ := os.Stat(file)
+		if info.IsDir() {
+			fmt.Println("Folder : " + file)
+			fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+		} else {
+			fmt.Println("File : " + file)
+			fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+			targetFile := filepath.Join(WorkDir, strings.TrimPrefix(file, parentDir))
+			fmt.Println(filepath.ToSlash(targetFile))
+			targetFolder := filepath.Dir(targetFile)
+			fmt.Println(filepath.ToSlash(targetFolder))
+		}
+		log.Println("")
+
+	}
+
+	//message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
+	//err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
 	return
 }
 
@@ -813,6 +849,11 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 	for _, nodeObj := range nodeList.List {
 		go func(node string) {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
+			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("rm -rf %s/", WorkDir))
+			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("mkdir -p %s/", WorkDir))
+			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("chown %s %s/", SysUser, WorkDir))
+
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
 			err := cdfSSH.CopyFileLocal2Remote(node, SysUser, KeyPath, Port, "C:\\Users\\shengj\\workspace\\k8s.tar", filepath.ToSlash(filepath.Join(WorkDir, "k8s.tar")))
 			if err == nil {
