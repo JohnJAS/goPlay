@@ -21,6 +21,7 @@ const (
 	VersionTXT      = "version.txt"
 	UpgradeSH       = "upgrade.sh"
 	AutoUpgradeJSON = "autoUpgrade.json"
+	ACLPROPERTIES   = "acl.properties"
 )
 
 //Action Type

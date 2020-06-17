@@ -55,11 +55,17 @@ var WorkDir string
 //SysUser is the user of destination k8s cluster
 var SysUser string
 
+//SysGroup is the user's group of destination k8s cluster
+var SysGroup string
+
 //KeyPath is the rsa key path
 var KeyPath string
 
 //Port is SSH port
 var Port string
+
+//Debug for autoUpgrade debug
+var Debug bool
 
 //DryRun for autoUpgrade dry-run
 var DryRun bool
@@ -133,6 +139,7 @@ func main() {
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
+	os.Args = append(os.Args, "--debug")
 	startLog()
 	defer LogFile.Close()
 
@@ -165,6 +172,12 @@ func main() {
 				Usage:       "The user for the SSH connection to the nodes inside the cluster. This user must have the permission to operate on the nodes inside the cluster. The configuration of the user must be done before running this script.(optional)",
 			},
 			&cli.StringFlag{
+				Name:        "g",
+				Aliases:     []string{"sysgroup"},
+				Destination: &SysGroup,
+				Usage:       "The user for the SSH connection to the nodes inside the cluster. This user must have the permission to operate on the nodes inside the cluster. The configuration of the user must be done before running this script.(optional)",
+			},
+			&cli.StringFlag{
 				Name:        "i",
 				Aliases:     []string{"rsakey"},
 				Destination: &KeyPath,
@@ -181,6 +194,12 @@ func main() {
 				Name:    "o",
 				Aliases: []string{"options"},
 				Usage:   "Set the options needed for each version of upgrade. For a single version, the rule is like '[upgradeVersion1]:[option1]=[value1],[option2]=[value2]'. Different versions use '|' to distinguish with others, like '[upgradeVersion1]:[option]=[value]|[upgradeVersion2]:[option]=[value]'.(optional)",
+			},
+			&cli.BoolFlag{
+				Name:        "debug",
+				Value:       false,
+				Destination: &Debug,
+				Usage:       "Dry run for autoUpgrade.(Alpha)",
 			},
 			&cli.BoolFlag{
 				Name:        "dry-run",
@@ -204,6 +223,14 @@ func main() {
 
 //autoUpgrade main process
 func startExec(c *cli.Context) (err error) {
+
+	if !c.Bool("g") || !c.Bool("sysgroup") {
+		SysGroup = SysUser
+		if Debug {
+			log.Println("SysGroup : " + SysGroup)
+		}
+	}
+
 	if c.Bool("verbose") {
 		LogLevel = cdfLog.TransferLogLevel(c.Value("verbose").(string))
 		if LogLevel == 0 {
@@ -281,6 +308,9 @@ func startExec(c *cli.Context) (err error) {
 	log.Println("Starting auto upgrade main process...")
 	log.Println("=====================================================================================================")
 	err = autoUpgrade()
+	if err != nil {
+		return
+	}
 	log.Println("=====================================================================================================")
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Congratulations! Auto upgrade process is finished successfully!")
 	return
@@ -785,45 +815,9 @@ func transferMode(mode string) (nodeList cdfCommon.NodeList) {
 	return
 }
 
-func FilePathWalkDir(root string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		files = append(files, path)
-		return nil
-	})
-	return files, err
-}
-
 func prepareClusterWorkSpace(version string) (err error) {
-	var files []string
-
-	// filepath.Walk
-	files, err = FilePathWalkDir(VersionPathMap[version])
-	if err != nil {
-		panic(err)
-	}
-
-	parentDir := cdfOS.ParentDir(CurrentDir)
-	for _, file := range files {
-		fmt.Println(file)
-		info, _ := os.Stat(file)
-		if info.IsDir() {
-			fmt.Println("Folder : " + file)
-			fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-		} else {
-			fmt.Println("File : " + file)
-			fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-			targetFile := filepath.Join(WorkDir, strings.TrimPrefix(file, parentDir))
-			fmt.Println(filepath.ToSlash(targetFile))
-			targetFolder := filepath.Dir(targetFile)
-			fmt.Println(filepath.ToSlash(targetFolder))
-		}
-		log.Println("")
-
-	}
-
-	//message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
-	//err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+	message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
+	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
 	return
 }
 
@@ -843,6 +837,37 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
 	}
 
+	var files []string
+
+	// filepath.Walk
+	files, err = cdfOS.FilePathWalkFileOnly(VersionPathMap[version])
+	if err != nil {
+		panic(err)
+	}
+
+	parentDir := cdfOS.ParentDir(CurrentDir)
+	//for _, file := range files {
+	//	fmt.Println(file)
+	//	info, _ := os.Stat(file)
+	//	if info.IsDir() {
+	//		fmt.Println("Folder : " + file)
+	//		fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+	//		baseFolder := strings.TrimPrefix(file, parentDir)
+	//		targetFolder := filepath.Join(WorkDir, baseFolder)
+	//		fmt.Println(filepath.ToSlash(targetFolder))
+	//	} else {
+	//		fmt.Println("File : " + file)
+	//		fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+	//		baseFile := strings.TrimPrefix(file, parentDir)
+	//		targetFile := filepath.Join(WorkDir, baseFile)
+	//		fmt.Println(filepath.ToSlash(targetFile))
+	//		targetFolder := filepath.Dir(targetFile)
+	//		fmt.Println(filepath.ToSlash(targetFolder))
+	//	}
+	//	log.Println("")
+	//
+	//}
+
 	nodeList := transferMode(mode)
 
 	ch := make(chan cdfCommon.CopyStatus, nodeList.Num)
@@ -850,12 +875,50 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	for _, nodeObj := range nodeList.List {
 		go func(node string) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
-			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("rm -rf %s/", WorkDir))
-			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("mkdir -p %s/", WorkDir))
-			cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, fmt.Sprintf("chown %s %s/", SysUser, WorkDir))
+			var cmd string
+			if err == nil {
+				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+			}
+
+			if err == nil {
+				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+			}
+
+			if err == nil {
+				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
-			err := cdfSSH.CopyFileLocal2Remote(node, SysUser, KeyPath, Port, "C:\\Users\\shengj\\workspace\\k8s.tar", filepath.ToSlash(filepath.Join(WorkDir, "k8s.tar")))
+			if err == nil {
+				for _, srcfile := range files {
+					baseFile := strings.TrimPrefix(srcfile, parentDir)
+					targetFile := filepath.ToSlash(filepath.Join(WorkDir, baseFile))
+					err = cdfSSH.CopyFileLocal2Remote(node, SysUser, KeyPath, Port, srcfile, targetFile)
+					if err != nil {
+						break
+					}
+				}
+			}
+
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Restore upgrade package ACL on Node %s ...", node))
+			if err == nil {
+				path := filepath.ToSlash(filepath.Join(WorkDir, VersionPackMap[version]))
+				cmd = fmt.Sprintf("cd %s ; setfacl --restore=%s", path, cdfCommon.ACLPROPERTIES)
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+			}
+			if err == nil {
+				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+			}
+
 			if err == nil {
 				ch <- cdfCommon.CopyStatus{true, fmt.Sprintf("Node: %s process completed.", node)}
 			} else {
@@ -870,7 +933,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New("Failed to copy upgrade package to all cluster nodes...")
+			err = errors.New("Failed to create auto-upgrade workspace inside all cluster nodes...")
 		}
 		i++
 		if i == nodeList.Num {

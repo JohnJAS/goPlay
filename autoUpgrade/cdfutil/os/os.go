@@ -56,7 +56,7 @@ func OpenFile(path string) (*os.File, error) {
 
 //WriteFile
 func WriteFile(path string, i interface{}) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	defer f.Close()
 	if err != nil {
 		return err
@@ -105,10 +105,19 @@ func ReadFile(path string, n ...int) (string, error) {
 	return "", nil
 }
 
-func FilePathWalkDir(root string) ([]string, error) {
+func FilePathWalk(root string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
+		files = append(files, path)
+		return nil
+	})
+	return files, err
+}
+
+func FilePathWalkFileOnly(root string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if ! info.IsDir() {
 			files = append(files, path)
 		}
 		return nil
