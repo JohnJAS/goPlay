@@ -117,14 +117,6 @@ func init() {
 		TempFolder = "/tmp/autoUpgrade"
 	}
 
-	//create log file
-	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
-	LogFile, err = cdfOS.CreateFile(LogFilePath)
-	defer LogFile.Close()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	//get current directory
 	CurrentDir, err = os.Getwd()
 	if err != nil {
@@ -349,9 +341,12 @@ func check(err error) error {
 
 func startLog() {
 	var err error
-	LogFile, err = cdfOS.OpenFile(LogFilePath)
+
+	//create log file
+	LogFilePath = filepath.Join(TempFolder, "upgradeLog", "autoUpgrade-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
+	LogFile, err = cdfOS.CreateFile(LogFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	//initialize logger
 	Logger = log.New(LogFile, "", 0)
