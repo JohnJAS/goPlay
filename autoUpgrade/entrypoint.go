@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"os"
@@ -865,6 +866,16 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 	nodeList := transferMode(mode)
 
+	var nodeRecordMap map[string]string
+	var remainNode []string
+
+	nodeRecordMap, err = readNodeRecord(version, strconv.Itoa(UpgExecCall))
+	if err != nil {
+		return
+	}
+	log.Println(nodeRecordMap)
+	log.Println(remainNode)
+
 	ch := make(chan cdfCommon.CopyStatus, nodeList.Num)
 
 	for _, nodeObj := range nodeList.List {
@@ -890,24 +901,30 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
+			var conn *ssh.Client
+			if err == nil {
+				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, Port)
+			}
+
 			if err == nil {
 				for _, srcfile := range files {
 					baseFile := strings.TrimPrefix(srcfile, parentDir)
 					targetFile := filepath.ToSlash(filepath.Join(WorkDir, baseFile))
-					err = cdfSSH.CopyFileLocal2Remote(node, SysUser, KeyPath, Port, srcfile, targetFile)
+					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile)
 					if err != nil {
 						break
 					}
 				}
 			}
 
-			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Restore upgrade package ACL on Node %s ...", node))
-			if err == nil {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Applying upgrade package permssions on Node %s ...", node))
+			if cdfCommon.SysType == "windows" && err == nil {
 				path := filepath.ToSlash(filepath.Join(WorkDir, VersionPackMap[version]))
 				cmd = fmt.Sprintf("cd %s ; setfacl --restore=%s", path, cdfCommon.ACLPROPERTIES)
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
 				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
 			}
+
 			if err == nil {
 				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
@@ -915,9 +932,9 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			}
 
 			if err == nil {
-				ch <- cdfCommon.CopyStatus{true, fmt.Sprintf("Node: %s process completed.", node)}
+				ch <- cdfCommon.CopyStatus{true, node, fmt.Sprintf("Node: %s process completed.", node)}
 			} else {
-				ch <- cdfCommon.CopyStatus{false, fmt.Sprintf("Node: %s process Failed.", node)}
+				ch <- cdfCommon.CopyStatus{false, node, fmt.Sprintf("Node: %s process Failed.", node)}
 			}
 		}(nodeObj.Name)
 	}
@@ -928,7 +945,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New("Failed to create auto-upgrade workspace inside all cluster nodes...")
+			err = errors.New(fmt.Sprintf("\nFailed to create auto-upgrade workspace inside all cluster nodes..."))
 		}
 		i++
 		if i == nodeList.Num {
@@ -936,5 +953,33 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		}
 	}
 
+	return
+}
+
+func readNodeRecord(version string, step string) (result map[string]string, err error) {
+	var exist bool
+	exist, err = cdfOS.PathExists(filepath.Join(TempFolder, version, step))
+	if err != nil {
+		return
+	}
+	if !exist {
+		return
+	} else {
+		var jsonString string
+		jsonString, err = cdfOS.ReadFile(filepath.Join(TempFolder, version, step))
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal([]byte(jsonString), &result)
+		return
+	}
+	return
+}
+
+func insertNodeRecord() (err error) {
+	return
+}
+
+func checkNodeRecord() (exist bool) {
 	return
 }

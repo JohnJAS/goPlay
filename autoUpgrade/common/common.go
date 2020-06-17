@@ -76,5 +76,6 @@ type ConnectionStatus struct {
 //CopyStatus is used in SSH copy check
 type CopyStatus struct {
 	Copied      bool
+	Node 		string
 	Description string
 }

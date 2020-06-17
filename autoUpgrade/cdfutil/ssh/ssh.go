@@ -2,7 +2,6 @@ package ssh
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -124,12 +123,7 @@ func SSHExecCmdReturnResult(node string, userName string, keyPath string, port s
 
 }
 
-func CopyFileLocal2Remote(node string, userName string, keyPath string, port string, srcfile string, desfile string) (err error) {
-	var conn *ssh.Client
-	conn, err = CreatSSHClient(node, userName, keyPath, port)
-	if err != nil {
-		return
-	}
+func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string) (err error) {
 
 	// create new SFTP client
 	var c *sftp.Client
@@ -159,9 +153,9 @@ func CopyFileLocal2Remote(node string, userName string, keyPath string, port str
 	defer df.Close()
 
 	// Copy the file
-	var r int64
-	r, err = df.ReadFrom(sf)
-	fmt.Sprintln("Read : %d", r)
+	//var r int64
+	_, err = df.ReadFrom(sf)
+	//log.Println(fmt.Sprintf("Copy file %s : %d",desfile ,r))
 
 	return
 }
