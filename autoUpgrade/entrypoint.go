@@ -753,7 +753,7 @@ func autoUpgrade() (err error) {
 //stepExec
 func stepExec(mode string, message string, f func(...string) error, version string, args string, order string) (err error) {
 	if UpgradeStep >= UpgExecCall {
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Upgrade step '%d' '%s' already executed, continue to next one.", UpgExecCall, message))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("--------- Upgrade step '%d' '%s' already executed, continue to next step ---------", UpgExecCall, message))
 		UpgExecCall++
 		return
 	}
@@ -877,6 +877,14 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 	for _, internalVersion := range internalVersionList {
 		log.Println(fmt.Sprintf("internalVersion : %s", internalVersion))
 
+		runes := []rune(internalVersion)
+		internalDotVersion := string(runes[:4]) + "." + string(runes[4:])
+		cmdPath := filepath.Join("packages", internalDotVersion)
+		if Debug {
+			log.Println(fmt.Sprintf("versionWithDot : %s", internalDotVersion))
+			log.Println(fmt.Sprintf("cmdPath : %s", cmdPath))
+		}
+
 		var releaseJsonObj cdfJson.Release
 		releaseJsonObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJsonObj, internalVersion)
 		if err != nil {
@@ -895,49 +903,72 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 			order := step.Order
 			cmd := step.Command
 
-			if Debug {
-				log.Println(fmt.Sprintf("mode : %s", mode))
-				log.Println(fmt.Sprintf("msg : %s", msg))
-				log.Println(fmt.Sprintf("order : %s", order))
-				log.Println(fmt.Sprintf("cmd : %s", cmd))
+			err = stepExec(mode, msg, upgradeProcess, internalVersion, filepath.Join(cmdPath, cmd), order)
+			if err != nil {
+				break
 			}
-
 		}
 
-		//err = stepExec(mode, message, upgradeProcess, internalVersion, cmd, order)
-		//if err != nil {
-		//	break
-		//}
 	}
 	return
 }
 
 func dynamicUpgradeProcess(version string) (err error) {
-	var mode string
-	var message string
-	var cmd string
-	var order string
-
-	err = stepExec(mode, message, upgradeProcess, version, cmd, order)
+	//var mode string
+	//var message string
+	//var cmd string
+	//var order string
+	//
+	//err = stepExec(mode, message, upgradeProcess, version, cmd, order)
 	return
 }
 
 func upgradeProcess(args ...string) (err error) {
+	var mode, version, cmd, order string
+
+	mode = args[0]
+	version = args[1]
+	cmd = args[2]
+	order = args[3]
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("mode: %s", mode))
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("cmd: %s", cmd))
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("order: %s", order))
+
+	if Debug {
+		log.Println(fmt.Sprintf("mode : %s", mode))
+		log.Println(fmt.Sprintf("version : %s", version))
+		log.Println(fmt.Sprintf("order : %s", order))
+		log.Println(fmt.Sprintf("cmd : %s", cmd))
+	}
+
+	var nodes []string
+	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
+	if err != nil {
+		return
+	} else if len(nodes) == 0 {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
+		return
+	}
+
+	for _, node := range nodes {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Starting upgrade process on %s...", node))
+		orgCmd := filepath.ToSlash(cmd)
+		execCmd := filepath.ToSlash(filepath.Join("bash "+WorkDir, VersionPackMap[version], cmd))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", orgCmd))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
+	}
 
 	return
 }
 
 func copyUpgradePacksToCluster(args ...string) (err error) {
 	var mode, version string
-	if len(args) < 2 {
-		return errors.New("Internal Error in function copyUpgradePacksToCluster")
-	}
-	if len(args) >= 2 {
-		mode = args[0]
-		version = args[1]
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("mode: %s", mode))
-		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
-	}
+
+	mode = args[0]
+	version = args[1]
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("mode: %s", mode))
+	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
 
 	var files []string
 
@@ -1151,7 +1182,7 @@ func getExecNode(mode string, version string, step string) (nodes []string, err 
 		}
 	}
 	if Debug {
-		log.Println(nodes);
+		log.Println(nodes)
 		log.Println(len(nodes))
 	}
 

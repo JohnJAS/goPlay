@@ -27,10 +27,10 @@ const (
 
 //Action Type
 const (
-	AllMasters   = "AllMasters"
-	AllWorkers   = "AllWorkers"
-	SingleMaster = "SingleMaster"
-	AllNodes     = "AllNodes"
+	AllMasters   = "allMasters"
+	AllWorkers   = "allWorkers"
+	SingleMaster = "singleMaster"
+	AllNodes     = "allNodes"
 )
 
 //Time Format
