@@ -18,10 +18,11 @@ const (
 
 //File Name
 const (
-	VersionTXT      = "version.txt"
-	UpgradeSH       = "upgrade.sh"
-	AutoUpgradeJSON = "autoUpgrade.json"
-	ACLPROPERTIES   = "acl.properties"
+	VersionTXT           = "version.txt"
+	UpgradeSH            = "upgrade.sh"
+	AutoUpgradeJSON      = "autoUpgrade.json"
+	AutoUpgradeChildJSON = "autoUpgradeChild.json"
+	ACLPROPERTIES        = "acl.properties"
 )
 
 //Action Type
@@ -76,6 +77,6 @@ type ConnectionStatus struct {
 //CopyStatus is used in SSH copy check
 type CopyStatus struct {
 	Copied      bool
-	Node 		string
+	Node        string
 	Description string
 }

@@ -192,7 +192,7 @@ func main() {
 				Name:        "debug",
 				Value:       false,
 				Destination: &Debug,
-				Usage:       "Dry run for autoUpgrade.(Alpha)",
+				Usage:       "Debug mode for autoUpgrade.(Alpha)",
 			},
 			&cli.BoolFlag{
 				Name:        "dry-run",
@@ -737,7 +737,7 @@ func autoUpgrade() (err error) {
 			return
 		}
 
-		err = dynamicUpgradeProcess(version)
+		err = autoUpgradeMainProcess(version)
 		if err != nil {
 			return
 		}
@@ -751,14 +751,15 @@ func autoUpgrade() (err error) {
 }
 
 //stepExec
-func stepExec(mode string, message string, f func(...string) error, version string, args string) (err error) {
+func stepExec(mode string, message string, f func(...string) error, version string, args string, order string) (err error) {
 	if UpgradeStep >= UpgExecCall {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Upgrade step '%d' '%s' already executed, continue to next one.", UpgExecCall, message))
+		UpgExecCall++
 		return
 	}
 	printUpgradeStep(UpgExecCall, message)
 
-	err = f(mode, version, args)
+	err = f(mode, version, args, order)
 	if err != nil {
 		return
 	}
@@ -813,11 +814,116 @@ func transferMode(mode string) (nodeList cdfCommon.NodeList) {
 
 func prepareClusterWorkSpace(version string) (err error) {
 	message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
-	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "")
+	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "", "")
+	return
+}
+
+func autoUpgradeMainProcess(version string) (err error) {
+
+	err = dynamicChildUpgradeProcess(version)
+	if err != nil {
+		return
+	}
+
+	err = dynamicUpgradeProcess(version)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func dynamicChildUpgradeProcess(version string) (err error) {
+
+	jsonPath := filepath.Join(CurrentDir, cdfCommon.AutoUpgradeChildJSON)
+	autoUpgradeJsonObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
+	if err != nil {
+		return
+	}
+
+	if Debug {
+		log.Println(fmt.Sprintf("autoUpgradeJsonObj : %v", autoUpgradeJsonObj))
+	}
+
+	var internalVersionList []string
+	startFlag := false
+	finishFlag := false
+
+	if ! stringContains(InternalUpgradePath, CurrentVersion) {
+		startFlag = true
+	}
+
+	for _, tempVersion := range InternalUpgradePath {
+		if tempVersion == CurrentVersion {
+			startFlag = true
+			continue
+		}
+		if tempVersion == version {
+			finishFlag = true
+		}
+		if startFlag && !finishFlag {
+			internalVersionList = append(internalVersionList, tempVersion)
+		}
+		if finishFlag {
+			break
+		}
+	}
+
+	if len(internalVersionList) == 0 {
+		cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("No internal version found till %s CDF.", version))
+		return
+	}
+
+	for _, internalVersion := range internalVersionList {
+		log.Println(fmt.Sprintf("internalVersion : %s", internalVersion))
+
+		var releaseJsonObj cdfJson.Release
+		releaseJsonObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJsonObj, internalVersion)
+		if err != nil {
+			return
+		}
+		if Debug {
+			log.Println(fmt.Sprintf("releaseJsonObj : %v", releaseJsonObj))
+		}
+
+		steps := releaseJsonObj.Steps
+
+		for _, step := range steps {
+
+			mode := step.Action
+			msg := step.Description
+			order := step.Order
+			cmd := step.Command
+
+			if Debug {
+				log.Println(fmt.Sprintf("mode : %s", mode))
+				log.Println(fmt.Sprintf("msg : %s", msg))
+				log.Println(fmt.Sprintf("order : %s", order))
+				log.Println(fmt.Sprintf("cmd : %s", cmd))
+			}
+
+		}
+
+		//err = stepExec(mode, message, upgradeProcess, internalVersion, cmd, order)
+		//if err != nil {
+		//	break
+		//}
+	}
 	return
 }
 
 func dynamicUpgradeProcess(version string) (err error) {
+	var mode string
+	var message string
+	var cmd string
+	var order string
+
+	err = stepExec(mode, message, upgradeProcess, version, cmd, order)
+	return
+}
+
+func upgradeProcess(args ...string) (err error) {
+
 	return
 }
 
@@ -869,8 +975,8 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
 	if err != nil {
 		return
-	}else if len(nodes) == 0 {
-		cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
+	} else if len(nodes) == 0 {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
 		return
 	}
 
@@ -964,7 +1070,7 @@ func recordNode(node string, version string, step string) (err error) {
 	}
 	if !exist {
 		var f *os.File
-		f , err = cdfOS.CreateFile(path)
+		f, err = cdfOS.CreateFile(path)
 		defer f.Close()
 		if err != nil {
 			return
@@ -972,7 +1078,7 @@ func recordNode(node string, version string, step string) (err error) {
 		nodeRecordMap := make(map[string]string)
 		nodeRecordMap[node] = "done"
 		var data []byte
-		data , err = json.Marshal(nodeRecordMap)
+		data, err = json.Marshal(nodeRecordMap)
 		if err != nil {
 			return
 		}
@@ -991,7 +1097,7 @@ func recordNode(node string, version string, step string) (err error) {
 		}
 		nodeRecordMap[node] = "done"
 		var data []byte
-		data , err = json.Marshal(nodeRecordMap)
+		data, err = json.Marshal(nodeRecordMap)
 		err = cdfOS.WriteFile(path, string(data))
 		return
 	}
@@ -1026,7 +1132,7 @@ func checkNodeRecord(nodeRecordMap map[string]string, node string) (exist bool) 
 	return false
 }
 
-func getExecNode(mode string, version string, step string)(nodes []string, err error){
+func getExecNode(mode string, version string, step string) (nodes []string, err error) {
 	nodeList := transferMode(mode)
 
 	var nodeRecordMap map[string]string
@@ -1035,14 +1141,28 @@ func getExecNode(mode string, version string, step string)(nodes []string, err e
 	if err != nil {
 		return
 	}
-	if Debug { log.Println(nodeRecordMap) }
+	if Debug {
+		log.Println(nodeRecordMap)
+	}
 
 	for _, nodeObj := range nodeList.List {
 		if !checkNodeRecord(nodeRecordMap, nodeObj.Name) {
 			nodes = append(nodes, nodeObj.Name)
 		}
 	}
-	if Debug { log.Println(nodes); log.Println(len(nodes)) }
+	if Debug {
+		log.Println(nodes);
+		log.Println(len(nodes))
+	}
 
 	return
+}
+
+func stringContains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

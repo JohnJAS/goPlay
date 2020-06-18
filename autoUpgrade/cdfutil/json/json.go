@@ -16,7 +16,7 @@ type Release struct {
 	MajorRelease  string         `json:"majorRelease"`
 	Versionless   string         `json:"versionless"`
 	CommandCheck  []CommandCheck `json:"commandCheck,omitempty"`
-	Steps         []Steps        `json:"steps"`
+	Steps         []Step         `json:"steps"`
 }
 
 type CommandCheck struct {
@@ -24,7 +24,7 @@ type CommandCheck struct {
 	Action string `json:"action"`
 }
 
-type Steps struct {
+type Step struct {
 	Order       string `json:"order"`
 	Action      string `json:"action"`
 	Description string `json:"description"`
@@ -55,7 +55,7 @@ func GetUpgradeChain(path string) (result []string, err error) {
 	}
 
 	for _, member := range autoUpgradeJson {
-		result = append(result,member.TargetVersion)
+		result = append(result, member.TargetVersion)
 	}
 
 	return
@@ -78,16 +78,15 @@ func GetIfMajor(path string, targeVersion string) (isMajor bool, err error) {
 	for _, member := range autoUpgradeJson {
 		if member.TargetVersion == targeVersion {
 			if member.MajorRelease == "true" {
-				return true,nil
-			}else{
-				return false,nil
+				return true, nil
+			} else {
+				return false, nil
 			}
 		}
 	}
 
-	return false,errors.New("fail to find in json file")
+	return false, errors.New("fail to find in json file")
 }
-
 
 func GetIfVersionless(path string, targeVersion string) (isMajor bool, err error) {
 	var autoUpgradeJson []Release
@@ -106,16 +105,48 @@ func GetIfVersionless(path string, targeVersion string) (isMajor bool, err error
 	for _, member := range autoUpgradeJson {
 		if member.TargetVersion == targeVersion {
 			if member.Versionless == "true" {
-				return true,nil
-			}else{
-				return false,nil
+				return true, nil
+			} else {
+				return false, nil
 			}
 		}
 	}
 
-	return false,errors.New("fail to find in json file")
+	return false, errors.New("fail to find in json file")
 }
 
+func GetAutoUpgradeJsonObj(path string) (autoUpgradeJson []Release, err error) {
+	var data []byte
+	data, err = ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(data, &autoUpgradeJson)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func GetReleaseJsonObj(autoUpgradeJsonObj []Release, version string) (release Release, err error) {
+	for _, release := range autoUpgradeJsonObj {
+		if release.TargetVersion == version {
+			return release, nil
+		}
+	}
+	return
+}
+
+func GetStepObj(steps []Step, order string) (stepObj Step, err error) {
+	for _, step := range steps {
+		if step.Order == order {
+			return step, nil
+		}
+	}
+	return
+}
 
 func Test() {
 
