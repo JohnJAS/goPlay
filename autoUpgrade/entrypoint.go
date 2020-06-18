@@ -842,43 +842,41 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	}
 
 	parentDir := cdfOS.ParentDir(CurrentDir)
-	//for _, file := range files {
-	//	fmt.Println(file)
-	//	info, _ := os.Stat(file)
-	//	if info.IsDir() {
-	//		fmt.Println("Folder : " + file)
-	//		fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-	//		baseFolder := strings.TrimPrefix(file, parentDir)
-	//		targetFolder := filepath.Join(WorkDir, baseFolder)
-	//		fmt.Println(filepath.ToSlash(targetFolder))
-	//	} else {
-	//		fmt.Println("File : " + file)
-	//		fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-	//		baseFile := strings.TrimPrefix(file, parentDir)
-	//		targetFile := filepath.Join(WorkDir, baseFile)
-	//		fmt.Println(filepath.ToSlash(targetFile))
-	//		targetFolder := filepath.Dir(targetFile)
-	//		fmt.Println(filepath.ToSlash(targetFolder))
-	//	}
-	//	log.Println("")
-	//
-	//}
+	if Debug {
+		for _, file := range files {
+			fmt.Println(file)
+			info, _ := os.Stat(file)
+			if info.IsDir() {
+				fmt.Println("Folder : " + file)
+				fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+				baseFolder := strings.TrimPrefix(file, parentDir)
+				targetFolder := filepath.Join(WorkDir, baseFolder)
+				fmt.Println(filepath.ToSlash(targetFolder))
+			} else {
+				fmt.Println("File : " + file)
+				fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+				baseFile := strings.TrimPrefix(file, parentDir)
+				targetFile := filepath.Join(WorkDir, baseFile)
+				fmt.Println(filepath.ToSlash(targetFile))
+				targetFolder := filepath.Dir(targetFile)
+				fmt.Println(filepath.ToSlash(targetFolder))
+			}
+			log.Println("")
+		}
+	}
 
-	nodeList := transferMode(mode)
-
-	var nodeRecordMap map[string]string
-	var remainNode []string
-
-	nodeRecordMap, err = readNodeRecord(version, strconv.Itoa(UpgExecCall))
+	var nodes []string
+	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
 	if err != nil {
 		return
+	}else if len(nodes) == 0 {
+		cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
+		return
 	}
-	log.Println(nodeRecordMap)
-	log.Println(remainNode)
 
-	ch := make(chan cdfCommon.CopyStatus, nodeList.Num)
+	ch := make(chan cdfCommon.CopyStatus, len(nodes))
 
-	for _, nodeObj := range nodeList.List {
+	for _, node := range nodes {
 		go func(node string) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
 			var cmd string
@@ -936,23 +934,67 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			} else {
 				ch <- cdfCommon.CopyStatus{false, node, fmt.Sprintf("Node: %s process Failed.", node)}
 			}
-		}(nodeObj.Name)
+		}(node)
 	}
 
 	i := 0
 	for result := range ch {
 		if result.Copied {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
+			err = recordNode(result.Node, version, strconv.Itoa(UpgExecCall))
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
 			err = errors.New(fmt.Sprintf("\nFailed to create auto-upgrade workspace inside all cluster nodes..."))
 		}
 		i++
-		if i == nodeList.Num {
+		if i == len(nodes) {
 			close(ch)
 		}
 	}
 
+	return
+}
+
+func recordNode(node string, version string, step string) (err error) {
+	var exist bool
+	path := filepath.Join(TempFolder, version, step)
+	exist, err = cdfOS.PathExists(path)
+	if err != nil {
+		return
+	}
+	if !exist {
+		var f *os.File
+		f , err = cdfOS.CreateFile(path)
+		defer f.Close()
+		if err != nil {
+			return
+		}
+		nodeRecordMap := make(map[string]string)
+		nodeRecordMap[node] = "done"
+		var data []byte
+		data , err = json.Marshal(nodeRecordMap)
+		if err != nil {
+			return
+		}
+		err = cdfOS.WriteFile(path, string(data))
+		return
+	} else {
+		var jsonString string
+		nodeRecordMap := make(map[string]string)
+		jsonString, err = cdfOS.ReadFile(path)
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal([]byte(jsonString), &nodeRecordMap)
+		if err != nil {
+			return
+		}
+		nodeRecordMap[node] = "done"
+		var data []byte
+		data , err = json.Marshal(nodeRecordMap)
+		err = cdfOS.WriteFile(path, string(data))
+		return
+	}
 	return
 }
 
@@ -976,10 +1018,31 @@ func readNodeRecord(version string, step string) (result map[string]string, err 
 	return
 }
 
-func insertNodeRecord() (err error) {
-	return
+func checkNodeRecord(nodeRecordMap map[string]string, node string) (exist bool) {
+	_, ok := nodeRecordMap[node]
+	if ok {
+		return true
+	}
+	return false
 }
 
-func checkNodeRecord() (exist bool) {
+func getExecNode(mode string, version string, step string)(nodes []string, err error){
+	nodeList := transferMode(mode)
+
+	var nodeRecordMap map[string]string
+
+	nodeRecordMap, err = readNodeRecord(version, step)
+	if err != nil {
+		return
+	}
+	if Debug { log.Println(nodeRecordMap) }
+
+	for _, nodeObj := range nodeList.List {
+		if !checkNodeRecord(nodeRecordMap, nodeObj.Name) {
+			nodes = append(nodes, nodeObj.Name)
+		}
+	}
+	if Debug { log.Println(nodes); log.Println(len(nodes)) }
+
 	return
 }
