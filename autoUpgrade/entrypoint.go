@@ -132,7 +132,7 @@ func main() {
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	os.Args = append(os.Args, "--debug")
+	//os.Args = append(os.Args, "--debug")
 	startLog()
 	defer LogFile.Close()
 
@@ -753,7 +753,7 @@ func autoUpgrade() (err error) {
 //stepExec
 func stepExec(mode string, message string, f func(...string) error, version string, args string, order string) (err error) {
 	if UpgradeStep >= UpgExecCall {
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("--------- Upgrade step '%d' '%s' already executed, continue to next step ---------", UpgExecCall, message))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE-STEP %d \"%s\" already executed, continue to next step...", UpgExecCall, message))
 		UpgExecCall++
 		return
 	}
@@ -875,7 +875,9 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 	}
 
 	for _, internalVersion := range internalVersionList {
-		log.Println(fmt.Sprintf("internalVersion : %s", internalVersion))
+		if Debug {
+			log.Println(fmt.Sprintf("internalVersion : %s", internalVersion))
+		}
 
 		runes := []rune(internalVersion)
 		internalDotVersion := string(runes[:4]) + "." + string(runes[4:])
@@ -943,7 +945,7 @@ func upgradeProcess(args ...string) (err error) {
 	}
 
 	var nodes []string
-	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
+	nodes, err = getExecNode(mode, "internal"+version, strconv.Itoa(UpgExecCall))
 	if err != nil {
 		return
 	} else if len(nodes) == 0 {
@@ -951,12 +953,16 @@ func upgradeProcess(args ...string) (err error) {
 		return
 	}
 
+	cdfLog.WriteLog(Logger,cdfCommon.INFO,LogLevel,fmt.Sprintf("NodesList : %v", nodes))
+
 	for _, node := range nodes {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Starting upgrade process on %s...", node))
 		orgCmd := filepath.ToSlash(cmd)
 		execCmd := filepath.ToSlash(filepath.Join("bash "+WorkDir, VersionPackMap[version], cmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", orgCmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
+
+		err = recordNode(node, "internal"+version, strconv.Itoa(UpgExecCall))
 	}
 
 	return
