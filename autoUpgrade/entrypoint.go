@@ -214,6 +214,7 @@ func main() {
 	err := app.Run(os.Args)
 	if err != nil {
 		cdfLog.WriteLog(Logger, cdfCommon.FATAL, LogLevel, err.Error(), LogFilePath)
+		os.Exit(1)
 	}
 }
 
@@ -754,7 +755,7 @@ func autoUpgrade() (err error) {
 }
 
 //stepExec
-func stepExec(mode string, message string, f func(...string) error, version string, args string, order string, upgradeType string) (err error) {
+func stepExec(mode string, message string, f func(...string) error, version string, args string, order string) (err error) {
 	if UpgradeStep >= UpgExecCall {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE-STEP %d \"%s\" already executed, continue to next step...", UpgExecCall, message))
 		UpgExecCall++
@@ -762,7 +763,7 @@ func stepExec(mode string, message string, f func(...string) error, version stri
 	}
 	printUpgradeStep(UpgExecCall, message)
 
-	err = f(mode, version, args, order, upgradeType)
+	err = f(mode, version, args, order)
 	if err != nil {
 		return
 	}
@@ -817,7 +818,7 @@ func transferMode(mode string) (nodeList cdfCommon.NodeList) {
 
 func prepareClusterWorkSpace(version string) (err error) {
 	message := fmt.Sprintf("Copy %s upgrade package to all cluster nodes..", version)
-	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "", "", "")
+	err = stepExec(cdfCommon.AllNodes, message, copyUpgradePacksToCluster, version, "", "")
 	return
 }
 
@@ -912,7 +913,7 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 			order := step.Order
 			cmd := step.Command
 
-			err = stepExec(mode, msg, upgradeProcess, internalVersion, filepath.Join(cmdPath, cmd), order, "internal")
+			err = stepExec(mode, msg, upgradeProcess, internalVersion, filepath.Join(WorkDir, VersionPackMap[InternalVersionMap[internalVersion]], cmdPath, cmd), order)
 			if err != nil {
 				break
 			}
@@ -926,7 +927,6 @@ func dynamicUpgradeProcess(version string) (err error) {
 	if Debug {
 		log.Println(fmt.Sprintf("\n---------------Walking in dynamicUpgradeProcess: %s ---------------", version))
 	}
-
 
 	jsonPath := filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON)
 	autoUpgradeJsonObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
@@ -960,7 +960,7 @@ func dynamicUpgradeProcess(version string) (err error) {
 		order := step.Order
 		cmd := step.Command
 
-		err = stepExec(mode, msg, upgradeProcess, version, filepath.Join(WorkDir, VersionPackMap[version], cmd), order, "")
+		err = stepExec(mode, msg, upgradeProcess, version, filepath.Join(WorkDir, VersionPackMap[version], cmd), order)
 		if err != nil {
 			break
 		}
@@ -970,13 +970,12 @@ func dynamicUpgradeProcess(version string) (err error) {
 }
 
 func upgradeProcess(args ...string) (err error) {
-	var mode, version, cmd, order, upgradeType string
+	var mode, version, cmd, order string
 
 	mode = args[0]
 	version = args[1]
 	cmd = args[2]
 	order = args[3]
-	upgradeType = args[4]
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("mode: %s", mode))
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("cmd: %s", cmd))
@@ -990,11 +989,7 @@ func upgradeProcess(args ...string) (err error) {
 	}
 
 	var nodes []string
-	if upgradeType == "internal" {
-		nodes, err = getExecNode(mode, "internal"+version, strconv.Itoa(UpgExecCall))
-	} else {
-		nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
-	}
+	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
 
 	if err != nil {
 		return
@@ -1008,21 +1003,16 @@ func upgradeProcess(args ...string) (err error) {
 	for _, node := range nodes {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Starting upgrade process on %s...", node))
 		orgCmd := filepath.ToSlash(cmd)
-
-		var execCmd string
-		if upgradeType == "internal" {
-			execCmd = filepath.ToSlash(filepath.Join("bash "+WorkDir,VersionPackMap[InternalVersionMap[version]], cmd))
-		}else{
-			execCmd = filepath.ToSlash(filepath.Join("bash "+WorkDir,VersionPackMap[version], cmd))
-		}
+		execCmd := filepath.ToSlash(cmd)
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", orgCmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
-		if upgradeType == "internal" {
-			err = recordNode(node, "internal"+version, strconv.Itoa(UpgExecCall))
-		} else {
-			err = recordNode(node, version, strconv.Itoa(UpgExecCall))
+		err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd)
+		if err != nil {
+			return
 		}
+
+		err = recordNode(node, version, strconv.Itoa(UpgExecCall))
 
 	}
 

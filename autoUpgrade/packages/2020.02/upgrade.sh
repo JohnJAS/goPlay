@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [[ $# -eq 0 ]] ; then
-    echo "Not enough parameters.."
-    exit 1
-fi
-
 while [ $# -gt 0 ];do
     case "$1" in
     -i|--infra) UPGRADE_INFRA=true
@@ -96,18 +91,17 @@ while [ $# -gt 0 ];do
     -h|--help)
         exit 1;;
     *) 
-        echo -e "The input parameter $1 is not a supported parameter or not used in a correct way. Please refer to the following exit 1.\n"
+        echo -e "The input parameter $1 is not a supported parameter or not used in a correct way. Please refer to the following usage.\n"
         exit 1;;
     esac
 done
 
-
 if [[ $UPGRADE_INFRA == "true" ]] ; then
-    echo "Pretend to execute upgrade.sh -i in 202008..."
+    echo "Pretend to execute upgrade.sh -i in 2020.02 subfolder..."
 
 elif [[ $UPGRADE_CDF == "true" ]] ; then
-    echo "Pretend to execute upgrade.sh -u in 202008..."
+    echo "Pretend to execute upgrade.sh -u in 2020.02 subfolder..."
 
 elif [[ $CLEAN == "true" ]] ; then
-    echo "Pretend to execute upgrade.sh -c in 202008..."
+    echo "Pretend to execute upgrade.sh -c in 2020.02 subfolder..."
 fi
