@@ -1013,28 +1013,25 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	}
 
 	parentDir := cdfOS.ParentDir(CurrentDir)
-	if Debug {
-		for _, file := range files {
-			fmt.Println(file)
-			info, _ := os.Stat(file)
-			if info.IsDir() {
-				fmt.Println("Folder : " + file)
-				fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-				baseFolder := strings.TrimPrefix(file, parentDir)
-				targetFolder := filepath.Join(WorkDir, baseFolder)
-				fmt.Println(filepath.ToSlash(targetFolder))
-			} else {
-				fmt.Println("File : " + file)
-				fmt.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-				baseFile := strings.TrimPrefix(file, parentDir)
-				targetFile := filepath.Join(WorkDir, baseFile)
-				fmt.Println(filepath.ToSlash(targetFile))
-				targetFolder := filepath.Dir(targetFile)
-				fmt.Println(filepath.ToSlash(targetFolder))
-			}
-			log.Println("")
+	filePermissionMap := make(map[string]os.FileMode)
+	for _, file := range files {
+		log.Println(file)
+		info, _ := os.Stat(file)
+		if ! info.IsDir() {
+			log.Println("File : " + file)
+			log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+			filePermissionMap[file] = info.Mode().Perm()
+			//baseFile := strings.TrimPrefix(file, parentDir)
+			//targetFile := filepath.Join(WorkDir, baseFile)
+			//log.Println(filepath.ToSlash(targetFile))
+			//targetFolder := filepath.Dir(targetFile)
+			//log.Println(filepath.ToSlash(targetFolder))
 		}
+		log.Println("")
 	}
+
+	fmt.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
+	return errors.New("Exit here")
 
 	var nodes []string
 	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
@@ -1079,7 +1076,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 				for _, srcfile := range files {
 					baseFile := strings.TrimPrefix(srcfile, parentDir)
 					targetFile := filepath.ToSlash(filepath.Join(WorkDir, baseFile))
-					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile)
+					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile, filePermissionMap[srcfile])
 					if err != nil {
 						break
 					}

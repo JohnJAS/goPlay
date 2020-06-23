@@ -123,7 +123,7 @@ func SSHExecCmdReturnResult(node string, userName string, keyPath string, port s
 
 }
 
-func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string) (err error) {
+func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string, permission os.FileMode) (err error) {
 
 	// create new SFTP client
 	var c *sftp.Client
@@ -155,7 +155,12 @@ func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string) (err
 	// Copy the file
 	//var r int64
 	_, err = df.ReadFrom(sf)
+	if err != nil {
+		return
+	}
 	//log.Println(fmt.Sprintf("Copy file %s : %d",desfile ,r))
+
+	err = c.Chmod(desfile, permission)
 
 	return
 }
