@@ -723,11 +723,15 @@ func autoUpgrade() (err error) {
 			return
 		}
 
-		getCurrentVersion(true)
+		err = getCurrentVersion(true)
+		if err != nil {
+			return
+		}
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("******* Finished upgrade CDF to %s *******", version))
 		log.Println()
 	}
 
+	err = cleanWorkDirInsideCluster(UpgradePath[len(UpgradePath)-1])
 	return
 }
 
@@ -983,7 +987,7 @@ func upgradeProcess(args ...string) (err error) {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", cmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
-		err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd)
+		err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd, true)
 		if err != nil {
 			return
 		}
@@ -1049,19 +1053,19 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			if err == nil {
 				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
@@ -1086,13 +1090,13 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 				path := filepath.ToSlash(filepath.Join(WorkDir, VersionPackMap[version]))
 				cmd = fmt.Sprintf("cd %s ; setfacl --restore=%s", path, cdfCommon.ACLPROPERTIES)
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			}
 
 			if err == nil {
@@ -1225,4 +1229,55 @@ func stringContains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func cleanWorkDirInsideCluster(version string) (err error) {
+	message := fmt.Sprintf("Clean autoUpgrade workspace inside all cluster nodes..")
+	err = stepExec(cdfCommon.AllNodes, message, cleanWorkDir, version, "", "")
+	return
+}
+
+func cleanWorkDir(args ...string) (err error) {
+	mode := args[0]
+	version := args[1]
+
+	var nodes []string
+	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
+	if err != nil {
+		return
+	} else if len(nodes) == 0 {
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
+		return
+	}
+
+	ch := make(chan cdfCommon.CleanStatus, len(nodes))
+
+	for _, node := range nodes {
+		go func(node string) {
+			cmd := fmt.Sprintf("rm -rf %s", WorkDir)
+			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, false)
+			if err == nil {
+				ch <- cdfCommon.CleanStatus{true, node, fmt.Sprintf("Node: %s process completed.", node)}
+			} else {
+				ch <- cdfCommon.CleanStatus{false, node, fmt.Sprintf("Node: %s process Failed.", node)}
+			}
+		}(node)
+	}
+
+	i := 0
+	for result := range ch {
+		if result.Cleaned {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
+			err = recordNode(result.Node, version, strconv.Itoa(UpgExecCall))
+		} else {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
+			err = errors.New(fmt.Sprintf("\nFailed to delete auto-upgrade workspace inside all cluster nodes..."))
+		}
+		i++
+		if i == len(nodes) {
+			close(ch)
+		}
+	}
+
+	return
 }

@@ -80,3 +80,10 @@ type CopyStatus struct {
 	Node        string
 	Description string
 }
+
+//CleanStatus is used in SSH copy check
+type CleanStatus struct {
+	Cleaned     bool
+	Node        string
+	Description string
+}

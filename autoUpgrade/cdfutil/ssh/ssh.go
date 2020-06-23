@@ -66,14 +66,13 @@ func CheckConnection(node string, userName string, keyPath string, port string) 
 	return
 }
 
-func SSHExecCmd(node string, userName string, keyPath string, port string, cmd string) (err error) {
+func SSHExecCmd(node string, userName string, keyPath string, port string, cmd string, output bool) (err error) {
 	var client *ssh.Client
 	client, err = CreatSSHClient(node, userName, keyPath, port)
 	defer client.Close()
 	if err != nil {
 		return
 	}
-
 
 	var session *ssh.Session
 	session, err = client.NewSession()
@@ -82,8 +81,10 @@ func SSHExecCmd(node string, userName string, keyPath string, port string, cmd s
 		return
 	}
 
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
+	if output {
+		session.Stdout = os.Stdout
+		session.Stderr = os.Stderr
+	}
 
 	err = session.Run(cmd)
 
