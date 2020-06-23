@@ -69,30 +69,21 @@ func CheckConnection(node string, userName string, keyPath string, port string) 
 func SSHExecCmd(node string, userName string, keyPath string, port string, cmd string) (err error) {
 	var client *ssh.Client
 	client, err = CreatSSHClient(node, userName, keyPath, port)
+	defer client.Close()
 	if err != nil {
 		return
 	}
+
 
 	var session *ssh.Session
 	session, err = client.NewSession()
+	defer session.Close()
 	if err != nil {
 		return
 	}
-	defer session.Close()
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
-
-	//cmdReader, err := session.StdoutPipe()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//scanner := bufio.NewScanner(cmdReader)
-	//go func() {
-	//	for scanner.Scan() {
-	//		fmt.Println(scanner.Text())
-	//	}
-	//}()
 
 	err = session.Run(cmd)
 
@@ -103,16 +94,17 @@ func SSHExecCmd(node string, userName string, keyPath string, port string, cmd s
 func SSHExecCmdReturnResult(node string, userName string, keyPath string, port string, cmd string) (outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	var client *ssh.Client
 	client, err = CreatSSHClient(node, userName, keyPath, port)
+	defer client.Close()
 	if err != nil {
 		return
 	}
 
 	var session *ssh.Session
 	session, err = client.NewSession()
+	defer session.Close()
 	if err != nil {
 		return
 	}
-	defer session.Close()
 
 	session.Stdout = &outbuf
 	session.Stderr = &errbuf

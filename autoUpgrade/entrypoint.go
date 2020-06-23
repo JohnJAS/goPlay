@@ -979,9 +979,8 @@ func upgradeProcess(args ...string) (err error) {
 
 	for _, node := range nodes {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Starting upgrade process on %s...", node))
-		orgCmd := filepath.ToSlash(cmd)
 		execCmd := filepath.ToSlash(cmd)
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", orgCmd))
+		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", cmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
 		err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd)
