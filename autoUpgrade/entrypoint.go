@@ -131,11 +131,11 @@ func init() {
 
 func main() {
 	//DEBUG_MODE
-	os.Args = append(os.Args, "-n")
-	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
-	os.Args = append(os.Args, "-d")
-	os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	os.Args = append(os.Args, "--debug")
+	//os.Args = append(os.Args, "-n")
+	//os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
+	//os.Args = append(os.Args, "-d")
+	//os.Args = append(os.Args, "/tmp/workspaceInCluster")
+	//os.Args = append(os.Args, "--debug")
 	startLog()
 	defer LogFile.Close()
 
@@ -224,6 +224,7 @@ func startExec(c *cli.Context) (err error) {
 	if !c.Bool("g") || !c.Bool("sysgroup") {
 		SysGroup = SysUser
 		if Debug {
+			log.Println("SysUser  : " + SysUser)
 			log.Println("SysGroup : " + SysGroup)
 		}
 	}
@@ -310,30 +311,6 @@ func startExec(c *cli.Context) (err error) {
 	}
 	log.Println("=====================================================================================================")
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Congratulations! Auto upgrade process is finished successfully!")
-	return
-}
-
-func execFunc(f func(i ...interface{}) error, i ...interface{}) (err error) {
-	if len(i) == 0 {
-		err = f()
-		log.Println()
-		return err
-	} else if len(i) == 1 {
-		switch i[0].(type) {
-		case string:
-			err = f(i[0].(string))
-			log.Println()
-			return err
-		case cdfCommon.NodeList:
-			err = f(i[0].(cdfCommon.NodeList))
-			log.Println()
-			return err
-		default:
-			return errors.New("INTERNAL ERROR : Unknown type within one parameter")
-		}
-	} else {
-		return errors.New("INTERNAL ERROR : Illegal parameter")
-	}
 	return
 }
 
