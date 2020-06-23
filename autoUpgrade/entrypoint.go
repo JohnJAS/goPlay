@@ -1255,7 +1255,7 @@ func cleanWorkDir(args ...string) (err error) {
 	for _, node := range nodes {
 		go func(node string) {
 			cmd := fmt.Sprintf("rm -rf %s", WorkDir)
-			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, false)
+			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
 			if err == nil {
 				ch <- cdfCommon.CleanStatus{true, node, fmt.Sprintf("Node: %s process completed.", node)}
 			} else {
