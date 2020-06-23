@@ -1030,8 +1030,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		log.Println("")
 	}
 
-	fmt.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
-	return errors.New("Exit here")
+	log.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
 
 	var nodes []string
 	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
