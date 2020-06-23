@@ -633,20 +633,19 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 	}
 
 	var wg sync.WaitGroup
+	var errRT1, errRT2 error
 	wg.Add(2)
 	go func() {
-		errRT := generateUpgradePath(fromVersion, targetVersion, false, &wg)
-		if errRT != nil {
-			err = errRT
-		}
+		errRT1 = generateUpgradePath(fromVersion, targetVersion, false, &wg)
 	}()
 	go func() {
-		errRT := generateUpgradePath(fromVersion, targetVersion, true, &wg)
-		if errRT != nil {
-			err = errRT
-		}
+		errRT2 = generateUpgradePath(fromVersion, targetVersion, true, &wg)
 	}()
 	wg.Wait()
+
+	if errRT1 != nil || errRT2 != nil {
+		err = errors.New(fmt.Sprintf("%v%v",errRT1,errRT2))
+	}
 
 	return
 }
@@ -659,6 +658,9 @@ func verifyUpgradePath() (err error) {
 //Checking upgrade package(s)...
 func checkUpgradePacks() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking upgrade package(s)...")
+	//check if users packages exist
+
+	//
 	return
 }
 
