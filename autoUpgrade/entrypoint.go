@@ -131,11 +131,11 @@ func init() {
 
 func main() {
 	//DEBUG_MODE
-	//os.Args = append(os.Args, "-n")
-	//os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
-	//os.Args = append(os.Args, "-d")
-	//os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	//os.Args = append(os.Args, "--debug")
+	os.Args = append(os.Args, "-n")
+	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
+	os.Args = append(os.Args, "-d")
+	os.Args = append(os.Args, "/tmp/workspaceInCluster")
+	os.Args = append(os.Args, "--debug")
 	startLog()
 	defer LogFile.Close()
 
@@ -644,7 +644,7 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 	wg.Wait()
 
 	if errRT1 != nil || errRT2 != nil {
-		err = errors.New(fmt.Sprintf("%v%v",errRT1,errRT2))
+		err = errors.New(fmt.Sprintf("%v%v", errRT1, errRT2))
 	}
 
 	return
@@ -1011,31 +1011,48 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 	var files []string
 
-	// filepath.Walk
 	files, err = cdfOS.FilePathWalkFileOnly(VersionPathMap[version])
+	if err != nil {
+		panic(err)
+	}
+
+	var folders []string
+
+	folders, err = cdfOS.FilePathWalkFolderOnly(VersionPathMap[version])
 	if err != nil {
 		panic(err)
 	}
 
 	parentDir := cdfOS.ParentDir(CurrentDir)
 	filePermissionMap := make(map[string]os.FileMode)
+	folderPermissionMap := make(map[string]os.FileMode)
+
 	for _, file := range files {
 		log.Println(file)
 		info, _ := os.Stat(file)
-		if ! info.IsDir() {
-			log.Println("File : " + file)
-			log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-			filePermissionMap[file] = info.Mode().Perm()
-			//baseFile := strings.TrimPrefix(file, parentDir)
-			//targetFile := filepath.Join(WorkDir, baseFile)
-			//log.Println(filepath.ToSlash(targetFile))
-			//targetFolder := filepath.Dir(targetFile)
-			//log.Println(filepath.ToSlash(targetFolder))
-		}
+		log.Println("File : " + file)
+		log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+		filePermissionMap[file] = info.Mode().Perm()
+
+		log.Println("")
+	}
+
+	for _, folder := range folders {
+		log.Println(folder)
+		info, _ := os.Stat(folder)
+
+		log.Println("Folder : " + folder)
+		log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+		baseFolder := strings.TrimPrefix(folder, parentDir)
+		targetFolder := filepath.Join(WorkDir, baseFolder)
+		targetFolder = filepath.ToSlash(targetFolder)
+		folderPermissionMap[targetFolder] = info.Mode().Perm()
+
 		log.Println("")
 	}
 
 	log.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
+	log.Println(fmt.Sprintf("folderPermissionMap : %v", folderPermissionMap))
 
 	var nodes []string
 	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))

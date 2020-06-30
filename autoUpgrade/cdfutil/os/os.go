@@ -125,6 +125,17 @@ func FilePathWalkFileOnly(root string) ([]string, error) {
 	return files, err
 }
 
+func FilePathWalkFolderOnly(root string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
+}
+
 //Filter directory with pattern
 //pattern logical operation is OR
 func FilterOR(targetDir string, pattern []string) (bool, error){
