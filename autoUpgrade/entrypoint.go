@@ -758,7 +758,7 @@ func stepExec(mode string, message string, f func(...string) error, version stri
 	return
 }
 
-//
+//print upgrade step
 func printUpgradeStep(step int, message string) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "")
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("--------- Starting UPGRADE-STEP %d \"%s\" ----------", step, message))
@@ -988,7 +988,7 @@ func upgradeProcess(args ...string) (err error) {
 	for _, node := range nodes {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Starting upgrade process on %s...", node))
 		execCmd := filepath.ToSlash(cmd)
-		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", cmd))
+		//cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", cmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
 		if !DryRun {
