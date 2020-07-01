@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 
 	cdfJson "autoUpgrade/cdfutil/json"
 	cdfK8S "autoUpgrade/cdfutil/k8s"
@@ -135,7 +136,8 @@ func main() {
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	os.Args = append(os.Args, "--debug")
+	//os.Args = append(os.Args, "--debug")
+	//os.Args = append(os.Args, "--dry-run")
 	startLog()
 	defer LogFile.Close()
 
@@ -839,7 +841,7 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 	startFlag := false
 	finishFlag := false
 
-	if ! stringContains(InternalUpgradePath, CurrentVersion) {
+	if !stringContains(InternalUpgradePath, CurrentVersion) {
 		startFlag = true
 	}
 
@@ -989,9 +991,11 @@ func upgradeProcess(args ...string) (err error) {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("origin cmd: %s", cmd))
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
-		err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd, true)
-		if err != nil {
-			return
+		if !DryRun {
+			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd, true)
+			if err != nil {
+				return
+			}
 		}
 
 		err = recordNode(node, version, strconv.Itoa(UpgExecCall))
@@ -1022,31 +1026,32 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	folderPermissionMap := make(map[string]os.FileMode)
 
 	for _, file := range files {
-		log.Println(file)
 		info, _ := os.Stat(file)
-		log.Println("File : " + file)
-		log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+		if Debug {
+			log.Println("File : " + file)
+			log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+			log.Println("")
+		}
 		filePermissionMap[file] = info.Mode().Perm()
-
-		log.Println("")
 	}
 
 	for _, folder := range folders {
-		log.Println(folder)
 		info, _ := os.Stat(folder)
-
-		log.Println("Folder : " + folder)
-		log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+		if Debug {
+			log.Println("Folder : " + folder)
+			log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
+			log.Println("")
+		}
 		//baseFolder := strings.TrimPrefix(folder, parentDir)
 		//targetFolder := filepath.Join(WorkDir, baseFolder)
 		//targetFolder = filepath.ToSlash(targetFolder)
 		folderPermissionMap[folder] = info.Mode().Perm()
-
-		log.Println("")
 	}
 
-	log.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
-	log.Println(fmt.Sprintf("folderPermissionMap : %v", folderPermissionMap))
+	if Debug {
+		log.Println(fmt.Sprintf("filePermissionMap : %v", filePermissionMap))
+		log.Println(fmt.Sprintf("folderPermissionMap : %v", folderPermissionMap))
+	}
 
 	var nodes []string
 	nodes, err = getExecNode(mode, version, strconv.Itoa(UpgExecCall))
@@ -1054,6 +1059,13 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		return
 	} else if len(nodes) == 0 {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Nothing remains in step %d", UpgExecCall))
+		return
+	}
+
+	if DryRun {
+		for _, node := range nodes {
+			err = recordNode(node, version, strconv.Itoa(UpgExecCall))
+		}
 		return
 	}
 
