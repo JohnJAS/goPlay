@@ -1088,14 +1088,20 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			}
 
 			if err == nil {
-				for _, srcfile := range files {
-					srcfolder := filepath.Dir(srcfile)
-					baseFile := strings.TrimPrefix(srcfile, parentDir)
+				//copy files with perm
+				for _, srcFile := range files {
+					baseFile := strings.TrimPrefix(srcFile, parentDir)
 					targetFile := filepath.ToSlash(filepath.Join(WorkDir, baseFile))
-					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile, filePermissionMap[srcfile], folderPermissionMap[srcfolder])
+					err = cdfSSH.CopyFileLocal2Remote(conn, srcFile, targetFile, filePermissionMap[srcFile])
 					if err != nil {
 						break
 					}
+				}
+				//recover folders perms
+				for _, srcFolder := range folders {
+					baseFolder := strings.TrimPrefix(srcFolder, parentDir)
+					targetFolder := filepath.ToSlash(filepath.Join(WorkDir, baseFolder))
+					err = cdfSSH.RestoreFolderPerm(conn, targetFolder, folderPermissionMap[srcFolder])
 				}
 			}
 

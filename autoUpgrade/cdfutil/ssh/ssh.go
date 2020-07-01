@@ -116,7 +116,7 @@ func SSHExecCmdReturnResult(node string, userName string, keyPath string, port s
 
 }
 
-func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string, filePerm os.FileMode, folderPerm os.FileMode) (err error) {
+func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string, perm os.FileMode) (err error) {
 
 	// create new SFTP client
 	var c *sftp.Client
@@ -133,9 +133,7 @@ func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string, file
 	}
 	defer sf.Close()
 
-	desfolder := filepath.ToSlash(filepath.Dir(desfile))
-
-	err = c.MkdirAll(desfolder)
+	err = c.MkdirAll(filepath.ToSlash(filepath.Dir(desfile)))
 	if err != nil {
 		return
 	}
@@ -155,12 +153,25 @@ func CopyFileLocal2Remote(conn *ssh.Client, srcfile string, desfile string, file
 	}
 	//log.Println(fmt.Sprintf("Copy file %s : %d",desfile ,r))
 
-	err = c.Chmod(desfolder, folderPerm)
+	err = c.Chmod(desfile, perm)
 	if err != nil {
 		return
 	}
 
-	err = c.Chmod(desfile, filePerm)
+	return
+}
+
+func RestoreFolderPerm(conn *ssh.Client, desfolder string, perm os.FileMode) (err error) {
+
+	// create new SFTP client
+	var c *sftp.Client
+	c, err = sftp.NewClient(conn)
+	if err != nil {
+		return
+	}
+	defer c.Close()
+
+	err = c.Chmod(desfolder, perm)
 	if err != nil {
 		return
 	}
