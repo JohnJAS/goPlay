@@ -1010,15 +1010,9 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("version: %s", version))
 
 	var files []string
-
-	files, err = cdfOS.FilePathWalkFileOnly(VersionPathMap[version])
-	if err != nil {
-		panic(err)
-	}
-
 	var folders []string
 
-	folders, err = cdfOS.FilePathWalkFolderOnly(VersionPathMap[version])
+	files, folders, err = cdfOS.FilePathWalk(VersionPathMap[version])
 	if err != nil {
 		panic(err)
 	}
@@ -1043,10 +1037,10 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 		log.Println("Folder : " + folder)
 		log.Println(fmt.Sprintf("permission : %o", info.Mode().Perm()))
-		baseFolder := strings.TrimPrefix(folder, parentDir)
-		targetFolder := filepath.Join(WorkDir, baseFolder)
-		targetFolder = filepath.ToSlash(targetFolder)
-		folderPermissionMap[targetFolder] = info.Mode().Perm()
+		//baseFolder := strings.TrimPrefix(folder, parentDir)
+		//targetFolder := filepath.Join(WorkDir, baseFolder)
+		//targetFolder = filepath.ToSlash(targetFolder)
+		folderPermissionMap[folder] = info.Mode().Perm()
 
 		log.Println("")
 	}
@@ -1095,9 +1089,10 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 			if err == nil {
 				for _, srcfile := range files {
+					srcfolder := filepath.Dir(srcfile)
 					baseFile := strings.TrimPrefix(srcfile, parentDir)
 					targetFile := filepath.ToSlash(filepath.Join(WorkDir, baseFile))
-					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile, filePermissionMap[srcfile])
+					err = cdfSSH.CopyFileLocal2Remote(conn, srcfile, targetFile, filePermissionMap[srcfile], folderPermissionMap[srcfolder])
 					if err != nil {
 						break
 					}

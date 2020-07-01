@@ -105,13 +105,18 @@ func ReadFile(path string, n ...int) (string, error) {
 	return "", nil
 }
 
-func FilePathWalk(root string) ([]string, error) {
+func FilePathWalk(root string) ([]string, []string, error) {
 	var files []string
+	var folders []string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		files = append(files, path)
+		if ! info.IsDir() {
+			files = append(files, path)
+		} else {
+			folders = append(folders, path)
+		}
 		return nil
 	})
-	return files, err
+	return files, folders, err
 }
 
 func FilePathWalkFileOnly(root string) ([]string, error) {
@@ -138,10 +143,10 @@ func FilePathWalkFolderOnly(root string) ([]string, error) {
 
 //Filter directory with pattern
 //pattern logical operation is OR
-func FilterOR(targetDir string, pattern []string) (bool, error){
+func FilterOR(targetDir string, pattern []string) (bool, error) {
 
 	for _, v := range pattern {
-		matches, err := filepath.Glob(filepath.Join(targetDir,v))
+		matches, err := filepath.Glob(filepath.Join(targetDir, v))
 
 		if err != nil {
 			return false, err
@@ -157,11 +162,11 @@ func FilterOR(targetDir string, pattern []string) (bool, error){
 
 //Filter directory with pattern
 //pattern logical operation is AND
-func FilterAND(targetDir string, pattern []string) (bool, error){
+func FilterAND(targetDir string, pattern []string) (bool, error) {
 	flag := true
 
 	for _, v := range pattern {
-		matches, err := filepath.Glob(filepath.Join(targetDir,v))
+		matches, err := filepath.Glob(filepath.Join(targetDir, v))
 
 		if err != nil {
 			return false, err
@@ -178,7 +183,6 @@ func FilterAND(targetDir string, pattern []string) (bool, error){
 	return false, nil
 }
 
-
 func ListDir(root string) ([]string, error) {
 	var files []string
 	fileInfo, err := ioutil.ReadDir(root)
@@ -194,7 +198,7 @@ func ListDir(root string) ([]string, error) {
 	return files, nil
 }
 
-func ListDirWithFilter(root string,pattern []string, filter func(string,[]string)(bool, error)) ([]string, error) {
+func ListDirWithFilter(root string, pattern []string, filter func(string, []string) (bool, error)) ([]string, error) {
 	var files []string
 	fileInfo, err := ioutil.ReadDir(root)
 	if err != nil {
@@ -203,16 +207,15 @@ func ListDirWithFilter(root string,pattern []string, filter func(string,[]string
 
 	for _, file := range fileInfo {
 		if file.IsDir() {
-			if ok, err := filter(filepath.Join(root, file.Name()), pattern); ok{
+			if ok, err := filter(filepath.Join(root, file.Name()), pattern); ok {
 				files = append(files, file.Name())
-			}else if err != nil {
+			} else if err != nil {
 				return nil, err
 			}
 		}
 	}
 	return files, nil
 }
-
 
 func InspectDir(root string) ([]string, error) {
 	var files []string
@@ -227,7 +230,7 @@ func InspectDir(root string) ([]string, error) {
 	return files, nil
 }
 
-func InspectDirWithFilter(root string, filter func(string)bool) ([]string, error) {
+func InspectDirWithFilter(root string, filter func(string) bool) ([]string, error) {
 	var files []string
 	fileInfo, err := ioutil.ReadDir(root)
 	if err != nil {
