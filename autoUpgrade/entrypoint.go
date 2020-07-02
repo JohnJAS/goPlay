@@ -137,7 +137,7 @@ func main() {
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
 	//os.Args = append(os.Args, "--debug")
-	//os.Args = append(os.Args, "--dry-run")
+	os.Args = append(os.Args, "--dry-run")
 	startLog()
 	defer LogFile.Close()
 
@@ -312,7 +312,36 @@ func startExec(c *cli.Context) (err error) {
 		return
 	}
 	log.Println("=====================================================================================================")
+	err = deleteTempFolder()
+	defer LogFile.Close()
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Congratulations! Auto upgrade process is finished successfully!")
+	return
+}
+
+func deleteTempFolder() (err error) {
+	LogFile.Close()
+
+	TempFolderBK := TempFolder + "BK"
+	logFileFolder := filepath.Join(TempFolder, "upgradeLog")
+	logFileFolderBK := filepath.Join(TempFolderBK, "upgradeLog")
+
+	exist, _ := cdfOS.PathExists(TempFolderBK)
+	if exist {
+		os.RemoveAll(TempFolderBK)
+	}
+
+	os.Rename(TempFolder, TempFolderBK)
+
+	LogFilePath = filepath.Join(logFileFolderBK, strings.TrimPrefix(LogFilePath, logFileFolder))
+	LogFile, err = cdfOS.OpenFile(LogFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Logger = log.New(LogFile, "", 0)
+
+	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Remove temp folder successfully.")
+
 	return
 }
 
