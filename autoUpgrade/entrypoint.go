@@ -430,7 +430,7 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration and try again.")
+			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration or password and try again.")
 		}
 		i++
 		if i == nodes.Num {
