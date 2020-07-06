@@ -12,11 +12,6 @@ import (
 )
 
 func getKeyFile(keyPath string) (key ssh.Signer, err error) {
-	if keyPath == "" {
-		usr, _ := user.Current()
-		keyPath = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
-	}
-
 	var buf []byte
 	buf, err = ioutil.ReadFile(keyPath)
 	if err != nil {
@@ -29,29 +24,45 @@ func getKeyFile(keyPath string) (key ssh.Signer, err error) {
 	return
 }
 
-func CreatSSHClient(node string, userName string, keyPath string, port string) (client *ssh.Client, err error) {
-	// Get rsa key
-	var key ssh.Signer
-	key, err = getKeyFile(keyPath)
-	if err != nil {
-		return
+func CreatSSHClient(node string, userName string, keyPath string, password string, port string) (client *ssh.Client, err error) {
+	//if no rsakey or password provided, get rsa key from default place
+	if keyPath == "" && password == "" {
+		usr, _ := user.Current()
+		keyPath = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
-	// Define the Client Config as :
-	config := &ssh.ClientConfig{
-		User:            userName,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(key),
-		},
+
+	var config *ssh.ClientConfig
+	if password != "" {
+		// Define the Client Config as :
+		config = &ssh.ClientConfig{
+			User:            userName,
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			Auth:            []ssh.AuthMethod{ssh.Password(password)},
+		}
+	} else {
+		// Get rsa key
+		var key ssh.Signer
+		key, err = getKeyFile(keyPath)
+		if err != nil {
+			return
+		}
+		// Define the Client Config as :
+		config = &ssh.ClientConfig{
+			User:            userName,
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(key),
+			},
+		}
 	}
 
 	return ssh.Dial("tcp", net.JoinHostPort(node, port), config)
 
 }
 
-func CheckConnection(node string, userName string, keyPath string, port string) (err error) {
+func CheckConnection(node string, userName string, keyPath string, password string, port string) (err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath, port)
+	client, err = CreatSSHClient(node, userName, keyPath, password, port)
 	if err != nil {
 		return
 	}
@@ -66,9 +77,9 @@ func CheckConnection(node string, userName string, keyPath string, port string) 
 	return
 }
 
-func SSHExecCmd(node string, userName string, keyPath string, port string, cmd string, output bool) (err error) {
+func SSHExecCmd(node string, userName string, keyPath string, password string, port string, cmd string, output bool) (err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath, port)
+	client, err = CreatSSHClient(node, userName, keyPath, password, port)
 	defer client.Close()
 	if err != nil {
 		return
@@ -92,9 +103,9 @@ func SSHExecCmd(node string, userName string, keyPath string, port string, cmd s
 
 }
 
-func SSHExecCmdReturnResult(node string, userName string, keyPath string, port string, cmd string) (outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
+func SSHExecCmdReturnResult(node string, userName string, keyPath string, password string, port string, cmd string) (outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	var client *ssh.Client
-	client, err = CreatSSHClient(node, userName, keyPath, port)
+	client, err = CreatSSHClient(node, userName, keyPath, password, port)
 	defer client.Close()
 	if err != nil {
 		return

@@ -10,10 +10,10 @@ import (
 )
 
 //GetCurrentVersion get CDF current version
-func GetCurrentVersion(node string, userName string, keyPath string, port string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
+func GetCurrentVersion(node string, userName string, keyPath string, password string, port string) (currentVersion string, outbuf bytes.Buffer, errbuf bytes.Buffer, err error) {
 	cmd := "kubectl get cm base-configmap -n core -o json"
 
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmd)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, password, port, cmd)
 	if err != nil {
 		return
 	}
@@ -35,12 +35,12 @@ func GetCurrentVersion(node string, userName string, keyPath string, port string
 }
 
 //GetCurrrentNodes get CDF current nodes
-func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, keyPath string, port string) (errbuf bytes.Buffer, err error) {
+func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string, keyPath string, password string, port string) (errbuf bytes.Buffer, err error) {
 	cmdMaster := "kubectl get nodes -l master=true -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 	cmdWorker := "kubectl get nodes -l 'master notin (true)' -o jsonpath='{.items[?(@.kind==\"Node\")].metadata.name}'"
 
 	var outbuf bytes.Buffer
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmdMaster)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, password, port, cmdMaster)
 	if err != nil {
 		return
 	}
@@ -48,7 +48,7 @@ func GetCurrrentNodes(nodelist *cdfCommon.NodeList, node string, userName string
 		nodelist.AddNode(cdfCommon.NewNode(node, cdfCommon.MASTER))
 	}
 
-	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, port, cmdWorker)
+	outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, userName, keyPath, password, port, cmdWorker)
 	if err != nil {
 		return
 	}

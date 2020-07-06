@@ -63,6 +63,9 @@ var SysGroup string
 //KeyPath is the rsa key path
 var KeyPath string
 
+//PassWord is the ssh password
+var PassWord string
+
 //Port is SSH port
 var Port string
 
@@ -136,16 +139,16 @@ func main() {
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	//os.Args = append(os.Args, "--debug")
-	os.Args = append(os.Args, "--dry-run")
+	os.Args = append(os.Args, "--debug")
+	//os.Args = append(os.Args, "--dry-run")
 	startLog()
 	defer LogFile.Close()
 
 	app := &cli.App{
 		Name:            "autoUpgrade",
 		Usage:           "Upgrade CDF automatically.",
-		UsageText:       "autoUpgrade [-d|--dir <working_directory>] [-n|--node <any_NodeInCluster>] [-u|--sysuser <system_user>] [-o|--options <input_options>]",
 		Description:     "Requires passwordless SSH to be configured to all cluster nodes. If the script is not run on a cluster node, you must have passwordless SSH configured to all cluster nodes. If the script is run on a cluster node, you must have passwordless SSH configured to all cluster nodes including this node. You can learn more about the auto upgrade through the official document.",
+		UsageText:       "autoUpgrade [-d|--dir <working_directory>] [-n|--node <any_NodeInCluster>]",
 		HideHelpCommand: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -183,8 +186,13 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        "p",
+				Aliases:     []string{"password"},
+				Destination: &PassWord,
+				Usage:       "The password for the SSH connection to the nodes inside the cluster.",
+			},
+			&cli.StringFlag{
+				Name:        "port",
 				Value:       "22",
-				Aliases:     []string{"port"},
 				Destination: &Port,
 				Usage:       "The port for the SSH connection to the nodes inside the cluster.",
 			},
@@ -239,6 +247,11 @@ func startExec(c *cli.Context) (err error) {
 		}
 	} else {
 		LogLevel = cdfCommon.DEBUG
+	}
+
+	if Debug {
+		log.Println("RsaKey    : " + KeyPath)
+		log.Println("PassWord  : " + PassWord)
 	}
 
 	//main process start
@@ -402,7 +415,7 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 
 	for _, nodeObj := range nodes.List {
 		go func(node string) {
-			err := cdfSSH.CheckConnection(node, SysUser, KeyPath, Port)
+			err := cdfSSH.CheckConnection(node, SysUser, KeyPath, PassWord, Port)
 			if err != nil {
 				ch <- cdfCommon.ConnectionStatus{false, fmt.Sprintf("Failed to connect to node %s", node)}
 			} else {
@@ -479,7 +492,7 @@ func getCurrentNodesInfo() (err error) {
 	if !exist {
 		// get current nodes info
 		var stderr bytes.Buffer
-		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath, Port)
+		stderr, err = cdfK8S.GetCurrrentNodes(&NodeList, NodeInCluster, SysUser, KeyPath, PassWord, Port)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return
@@ -534,7 +547,7 @@ func getCurrentVersion(update bool) error {
 	}
 	if !exist || update {
 		var stdout, stderr bytes.Buffer
-		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath, Port)
+		CurrentVersion, stdout, stderr, err = cdfK8S.GetCurrentVersion(NodeInCluster, SysUser, KeyPath, PassWord, Port)
 		if err != nil {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, stderr.String())
 			return err
@@ -1021,7 +1034,7 @@ func upgradeProcess(args ...string) (err error) {
 		cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("exec cmd: %s", execCmd))
 
 		if !DryRun {
-			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, execCmd, true)
+			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, execCmd, true)
 			if err != nil {
 				return
 			}
@@ -1107,25 +1120,25 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			if err == nil {
 				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
 			var conn *ssh.Client
 			if err == nil {
-				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, Port)
+				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
 			}
 
 			if err == nil {
@@ -1151,13 +1164,13 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 				path := filepath.ToSlash(filepath.Join(WorkDir, VersionPackMap[version]))
 				cmd = fmt.Sprintf("cd %s ; setfacl --restore=%s", path, cdfCommon.ACLPROPERTIES)
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
 			if err == nil {
 				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
 				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
 			if err == nil {
@@ -1316,7 +1329,7 @@ func cleanWorkDir(args ...string) (err error) {
 	for _, node := range nodes {
 		go func(node string) {
 			cmd := fmt.Sprintf("rm -rf %s", WorkDir)
-			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, Port, cmd, true)
+			err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			if err == nil {
 				ch <- cdfCommon.CleanStatus{true, node, fmt.Sprintf("Node: %s process completed.", node)}
 			} else {
