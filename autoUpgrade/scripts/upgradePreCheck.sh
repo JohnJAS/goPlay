@@ -88,6 +88,56 @@ while [[ $# -ge 1 ]] ; do
     shift
 done
 
+getSequenceFromUpgradeChain(){
+    local version=$1
+    local foundFlag=false
+    #start from 1
+    local count=1
+
+    for tempversion in ${UPGRADE_CHAIN[*]} ; do
+        if [[ ${version} == ${tempversion} ]] ; then
+            foundFlag=true;
+            break
+        else
+            (( count++ ))
+        fi
+    done
+    if [[ ${foundFlag} != "true" ]] ; then
+        if [[ ${version} == "201811" ]] ; then
+            # Upgrade chain (generate from json file) don't contain the CDF version where it started, 
+            # so check if it is at the very beginning. 
+            # Basiclly, it means the 201811 which is where we start to support autoUpgrade.
+            count=0
+        else
+            #not found, return -1
+            count=-1
+        fi 
+    fi
+    echo $count
+}
+
+execFunc(){
+    local function="$1"
+    local range=("$2")
+
+    local f_seq=$(getSequenceFromUpgradeChain "$FROM_VERSION")
+    local t_seq=$(getSequenceFromUpgradeChain "$TARGET_VERSION")
+
+    local rl_seq=$(getSequenceFromUpgradeChain "${range[0]}")
+    local rr_seq=$(getSequenceFromUpgradeChain "${range[NF-1]}")
+
+    if [[ $rl_seq -gt $t_seq ]] || [[ $rr_seq -lt $f_seq ]] ; then
+        if [[ $SLIENT_MODE != "true" ]] ; then
+            write_log "info" "Execute $function"
+        fi
+        $function
+    else
+        if [[ $SLIENT_MODE != "true" ]] ; then
+            write_log "info" "No need to execute function $function"
+        fi
+    fi
+}
+
 [[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." 
 [[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." 
 
