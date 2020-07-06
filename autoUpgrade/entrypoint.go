@@ -139,8 +139,8 @@ func main() {
 	os.Args = append(os.Args, "shcCDFRH75vm01-0.hpeswlab.net")
 	os.Args = append(os.Args, "-d")
 	os.Args = append(os.Args, "/tmp/workspaceInCluster")
-	os.Args = append(os.Args, "--debug")
-	//os.Args = append(os.Args, "--dry-run")
+	//os.Args = append(os.Args, "--debug")
+	os.Args = append(os.Args, "--dry-run")
 	startLog()
 	defer LogFile.Close()
 
@@ -205,18 +205,18 @@ func main() {
 				Name:        "debug",
 				Value:       false,
 				Destination: &Debug,
-				Usage:       "Debug mode for autoUpgrade.(Alpha)",
+				Usage:       "Debug mode for autoUpgrade.",
 			},
 			&cli.BoolFlag{
 				Name:        "dry-run",
 				Value:       false,
 				Destination: &DryRun,
-				Usage:       "Dry run for autoUpgrade.(Alpha)",
+				Usage:       "Dry run for autoUpgrade.",
 			},
 			&cli.StringFlag{
 				Name:  "verbose",
 				Value: "DUBUG",
-				Usage: "Set log level for autoUpgrade.(Alpha)",
+				Usage: "Set log level for autoUpgrade.",
 			},
 		},
 		Action: startExec,
@@ -250,8 +250,8 @@ func startExec(c *cli.Context) (err error) {
 	}
 
 	if Debug {
-		log.Println("RsaKey    : " + KeyPath)
-		log.Println("PassWord  : " + PassWord)
+		log.Println("RsaKey   : " + KeyPath)
+		log.Println("PassWord : " + PassWord)
 	}
 
 	//main process start
@@ -294,13 +294,6 @@ func startExec(c *cli.Context) (err error) {
 
 	//get upgrade path
 	err = getUpgradePath()
-	if err != nil {
-		return
-	}
-	log.Println()
-
-	//check upgrade packages
-	err = checkUpgradePacks()
 	if err != nil {
 		return
 	}
@@ -615,8 +608,6 @@ func getUpgradePath() (err error) {
 	err = calculateUpgradePath(fromVersion, targetVersion)
 	if err != nil {
 		return err
-	} else if UpgradePath == nil {
-		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s", fromVersion, targetVersion))
 	}
 
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("CORRECT_UPGRADE_PATH  : %s", strings.Join(UpgradePath, " ")))
@@ -670,10 +661,63 @@ func generateUpgradePath(fromVersion string, targetVersion string, internal bool
 	return
 }
 
+func getSequenceFromUpgradeChain(version string) (sequence int) {
+	// -1 means not found
+	sequence = -1
+
+	for i, x := range UpgradeChain {
+		if version == x {
+			sequence = i + 1
+			break
+		}
+	}
+	if sequence == -1 {
+		// Upgrade chain (generate from json file) don't contain the CDF version where it started,
+		// so check if it is at the very beginning.
+		// Basiclly, it means the 201811 which is where we start to support autoUpgrade.
+		if version == "201811" {
+			sequence = 0
+		}
+	}
+
+	return
+}
+
+func verifyFrom2Target(fromVersion, targetVersion string) (err error) {
+	startSeq := getSequenceFromUpgradeChain(fromVersion)
+	targetSeq := getSequenceFromUpgradeChain(targetVersion)
+
+	if Debug {
+		log.Println(fmt.Sprintf("startSeq : %v", startSeq))
+		log.Println(fmt.Sprintf("startSeq : %v", targetSeq))
+
+	}
+
+	if startSeq == -1 {
+		return errors.New(fmt.Sprintf("Upgrading CDF from %s is not supportted in autoUpgrade route. The earliest supportted version is 201811.", fromVersion))
+	}
+
+	if targetSeq == -1 {
+		return errors.New(fmt.Sprintf("Upgrading CDF from %s to %s is not supportted.", fromVersion, targetVersion))
+	}
+
+	if targetSeq < startSeq {
+		return errors.New(fmt.Sprintf("You can't upgrade currently installed %s CDF with %s package. Please use a newer upgrade package.", fromVersion, targetVersion))
+	}
+
+	if targetSeq == startSeq {
+		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s.", fromVersion, targetVersion))
+	}
+
+	return
+}
+
 //calculate upgrade path
 func calculateUpgradePath(fromVersion string, targetVersion string) (err error) {
-	if fromVersion == targetVersion {
-		return nil
+
+	err = verifyFrom2Target(fromVersion, targetVersion)
+	if err != nil {
+		return err
 	}
 
 	var wg sync.WaitGroup
@@ -691,20 +735,6 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 		err = errors.New(fmt.Sprintf("%v%v", errRT1, errRT2))
 	}
 
-	return
-}
-
-//verify upgrade path
-func verifyUpgradePath() (err error) {
-	return
-}
-
-//Checking upgrade package(s)...
-func checkUpgradePacks() (err error) {
-	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking upgrade package(s)...")
-	//check if users packages exist
-
-	//
 	return
 }
 
