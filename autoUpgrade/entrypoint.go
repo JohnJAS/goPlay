@@ -351,13 +351,6 @@ func deleteTempFolder() (err error) {
 	return
 }
 
-func check(err error) error {
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func startLog() {
 	var err error
 
@@ -384,7 +377,7 @@ func initUpgradeStep() error {
 		if err != nil && err != io.EOF {
 			return err
 		} else if result == "" {
-			return errors.New("Fail to get UpgradeStep.")
+			return errors.New("Fail to get UpgradeStep")
 		}
 		UpgradeStep, err = strconv.Atoi(result)
 		if err != nil {
@@ -395,7 +388,10 @@ func initUpgradeStep() error {
 		return nil
 	} else {
 		err := cdfOS.WriteFile(upgradeStepFilePath, UpgradeStep)
-		return check(err)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -423,7 +419,7 @@ func checkConnection(nodes cdfCommon.NodeList) (err error) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New("\nNode(s) unreachable found. Please check your SSH passwordless configuration or password and try again.")
+			err = errors.New("Node(s) unreachable found. Please check your SSH passwordless configuration or password and try again")
 		}
 		i++
 		if i == nodes.Num {
@@ -694,19 +690,19 @@ func verifyFrom2Target(fromVersion, targetVersion string) (err error) {
 	}
 
 	if startSeq == -1 {
-		return errors.New(fmt.Sprintf("Upgrading CDF from %s is not supportted in autoUpgrade route. The earliest supportted version is 201811.", fromVersion))
+		return fmt.Errorf("Upgrading CDF from %s is not supportted in autoUpgrade route. The earliest supportted version is 201811", fromVersion)
 	}
 
 	if targetSeq == -1 {
-		return errors.New(fmt.Sprintf("Upgrading CDF from %s to %s is not supportted.", fromVersion, targetVersion))
+		return fmt.Errorf("Upgrading CDF from %s to %s is not supportted", fromVersion, targetVersion)
 	}
 
 	if targetSeq < startSeq {
-		return errors.New(fmt.Sprintf("You can't upgrade currently installed %s CDF with %s package. Please use a newer upgrade package.", fromVersion, targetVersion))
+		return fmt.Errorf("You can't upgrade currently installed %s CDF with %s package. Please use a newer upgrade package", fromVersion, targetVersion)
 	}
 
 	if targetSeq == startSeq {
-		return errors.New(fmt.Sprintf("No need to upgrade CDF from %s to %s.", fromVersion, targetVersion))
+		return fmt.Errorf("No need to upgrade CDF from %s to %s", fromVersion, targetVersion)
 	}
 
 	return
@@ -732,7 +728,7 @@ func calculateUpgradePath(fromVersion string, targetVersion string) (err error) 
 	wg.Wait()
 
 	if errRT1 != nil || errRT2 != nil {
-		err = errors.New(fmt.Sprintf("%v%v", errRT1, errRT2))
+		err = fmt.Errorf("%v%v", errRT1, errRT2)
 	}
 
 	return
@@ -759,7 +755,7 @@ func initVersionPathMap() error {
 		}
 		versionSlice := strings.Split(fullVersion, ".")
 		if len(versionSlice) < 2 {
-			return errors.New(fmt.Sprintf("Invaild format of %s under '%s'", cdfCommon.VersionTXT, path))
+			return fmt.Errorf("Invaild format of %s under '%s'", cdfCommon.VersionTXT, path)
 		}
 		version := versionSlice[0] + versionSlice[1]
 		VersionPackMap[version] = pack
@@ -900,13 +896,13 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 	}
 
 	jsonPath := filepath.Join(CurrentDir, cdfCommon.AutoUpgradeChildJSON)
-	autoUpgradeJsonObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
+	autoUpgradeJSONObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
 	if err != nil {
 		return
 	}
 
 	if Debug {
-		log.Println(fmt.Sprintf("autoUpgradeChildJsonObj : %v", autoUpgradeJsonObj))
+		log.Println(fmt.Sprintf("autoUpgradeChildJsonObj : %v", autoUpgradeJSONObj))
 	}
 
 	var internalVersionList []string
@@ -952,16 +948,16 @@ func dynamicChildUpgradeProcess(version string) (err error) {
 			log.Println(fmt.Sprintf("cmdPath : %s", cmdPath))
 		}
 
-		var releaseJsonObj cdfJson.Release
-		releaseJsonObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJsonObj, internalVersion)
+		var releaseJSONObj cdfJson.Release
+		releaseJSONObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJSONObj, internalVersion)
 		if err != nil {
 			return
 		}
 		if Debug {
-			log.Println(fmt.Sprintf("releaseJsonObj : %v", releaseJsonObj))
+			log.Println(fmt.Sprintf("releaseJSONObj : %v", releaseJSONObj))
 		}
 
-		steps := releaseJsonObj.Steps
+		steps := releaseJSONObj.Steps
 
 		for _, step := range steps {
 
@@ -986,29 +982,29 @@ func dynamicUpgradeProcess(version string) (err error) {
 	}
 
 	jsonPath := filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON)
-	autoUpgradeJsonObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
+	autoUpgradeJSONObj, err := cdfJson.GetAutoUpgradeJsonObj(jsonPath)
 	if err != nil {
 		return
 	}
 
 	if Debug {
-		log.Println(fmt.Sprintf("autoUpgradeJsonObj : %v", autoUpgradeJsonObj))
+		log.Println(fmt.Sprintf("autoUpgradeJSONObj : %v", autoUpgradeJSONObj))
 	}
 
 	if Debug {
 		log.Println(fmt.Sprintf("version : %s", version))
 	}
 
-	var releaseJsonObj cdfJson.Release
-	releaseJsonObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJsonObj, version)
+	var releaseJSONObj cdfJson.Release
+	releaseJSONObj, err = cdfJson.GetReleaseJsonObj(autoUpgradeJSONObj, version)
 	if err != nil {
 		return
 	}
 	if Debug {
-		log.Println(fmt.Sprintf("releaseJsonObj : %v", releaseJsonObj))
+		log.Println(fmt.Sprintf("releaseJSONObj : %v", releaseJSONObj))
 	}
 
-	steps := releaseJsonObj.Steps
+	steps := releaseJSONObj.Steps
 
 	for _, step := range steps {
 
@@ -1218,7 +1214,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			err = recordNode(result.Node, version, strconv.Itoa(UpgExecCall))
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New(fmt.Sprintf("\nFailed to create auto-upgrade workspace inside all cluster nodes..."))
+			err = fmt.Errorf("Failed to create auto-upgrade workspace inside all cluster nodes")
 		}
 		i++
 		if i == len(nodes) {
@@ -1375,7 +1371,7 @@ func cleanWorkDir(args ...string) (err error) {
 			err = recordNode(result.Node, version, strconv.Itoa(UpgExecCall))
 		} else {
 			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
-			err = errors.New(fmt.Sprintf("\nFailed to delete auto-upgrade workspace inside all cluster nodes..."))
+			err = fmt.Errorf("Failed to delete auto-upgrade workspace inside all cluster nodes")
 		}
 		i++
 		if i == len(nodes) {
