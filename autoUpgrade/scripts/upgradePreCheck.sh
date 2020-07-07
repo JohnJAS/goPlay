@@ -84,6 +84,10 @@ getSequenceFromUpgradeChain(){
     echo $count
 }
 
+#execFunc <function name> <check region>
+#check region should start from 201811 , can be earliar
+#if you need to check all CDF versions, use [000000,999999] as regison 
+#Format : execFunc checkforbar "201911 202008"
 execFunc(){
     local function="$1"
     local region=($2)
