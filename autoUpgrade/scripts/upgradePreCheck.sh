@@ -1,4 +1,15 @@
 #!/bin/bash
+
+CURRENT_DIR=$(cd `dirname $0`;pwd)
+JQ=${CURRENT_DIR}/../bin/jq
+TIMEOUT_FOR_SERVICES=300
+
+exec_cmd(){
+    local cmdSubPath="../bin"
+    $CURRENT_DIR/${cmdSubPath}/cmd_wrapper -c "$1" -f $LOGFILE -x=DEBUG $2 $3 $4 $5
+    return $?
+}
+
 write_log() {
     local level=$1
     local msg=$2
@@ -44,49 +55,6 @@ print_help() {
     echo "    -b, --byok               BYOK mode pre-check"
     echo "    -h, --help               Help message."
 }
-#main
-source /etc/profile.d/itom-cdf.sh 2>/dev/null || source /etc/profile
-unset HTTP_PROXY; unset HTTPS_PROXY; unset http_proxy; unset https_proxy;
-
-if [[ "$BYOK" == "true" ]] ; then
-    LOGFILE=${CURRENT_DIR}/upgrade-`date "+%Y%m%d%H%M%S"`.log
-else
-    if [[ ! -d ${K8S_HOME}/log/scripts/upgradePreCheck ]] ; then
-        mkdir -p ${K8S_HOME}/log/scripts/upgradePreCheck
-    fi
-    LOGFILE=${K8S_HOME}/log/scripts/upgradePreCheck/upgradePreCheck-`date "+%Y%m%d%H%M%S"`.log
-fi
-
-
-while [[ $# -ge 1 ]] ; do
-    key="${1}"
-    #============ process input parameter and validation =========================
-    case ${key} in
-        -f|--fromVersion)
-            FROM_VERSION="${2}"
-            shift
-        ;;
-        -t|--targetVersion)
-            TARGET_VERSION="${2}"
-            shift
-        ;;
-        -s|--slient)
-            SLIENT_MODE="true"
-        ;;
-        -b|--byok)
-            BYOK="true"
-        ;;
-        -h|--help)
-            print_help
-            exit 0
-        ;;
-        *)
-            print_help
-            write_log "error" "Unknown argument '${key}'. Run -h|--help to get script help."
-        ;;
-    esac
-    shift
-done
 
 getSequenceFromUpgradeChain(){
     local version=$1
@@ -118,33 +86,119 @@ getSequenceFromUpgradeChain(){
 
 execFunc(){
     local function="$1"
-    local range=("$2")
+    local region=($2)
+    local mandatory="$3"
 
-    local f_seq=$(getSequenceFromUpgradeChain "$FROM_VERSION")
-    local t_seq=$(getSequenceFromUpgradeChain "$TARGET_VERSION")
+    #upgrade region
+    local f=$(getSequenceFromUpgradeChain "$FROM_VERSION")
+    local t=$(getSequenceFromUpgradeChain "$TARGET_VERSION")
 
-    local rl_seq=$(getSequenceFromUpgradeChain "${range[0]}")
-    local rr_seq=$(getSequenceFromUpgradeChain "${range[NF-1]}")
+    #check region
+    local l=$(getSequenceFromUpgradeChain "${region[0]}")
+    local r=$(getSequenceFromUpgradeChain "${region[NF-1]}")
 
-    if [[ $rl_seq -gt $t_seq ]] || [[ $rr_seq -lt $f_seq ]] ; then
+    write_log "debug" "[f,t]=[$f,$t]"
+    write_log "debug" "[l,r]=[$l,$r]"
+
+    if [[ $l -gt $t ]] || [[ $r -lt $f ]] ; then
         if [[ $SLIENT_MODE != "true" ]] ; then
-            write_log "info" "Execute $function"
+            write_log "debug" "No need to execute function $function"
         fi
-        $function
     else
         if [[ $SLIENT_MODE != "true" ]] ; then
-            write_log "info" "No need to execute function $function"
+            write_log "debug" "Execute $function"
         fi
+        $function
     fi
 }
 
-[[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." 
-[[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." 
+checkGetResource(){
+    local resName=$1
+    local resType=$2
+    local namespace=$3
 
-CURRENT_DIR=$(cd `dirname $0`;pwd)
-JQ=${CURRENT_DIR}/../bin/jq
+    local tempJson=
+    local retryTimes=0
+    while true ; do
+        exec_cmd "kubectl get $resType $resName -n $namespace"
+        if [[ $? != 0 ]] ; then
+            if [[ $retryTimes -lt $TIMEOUT_FOR_SERVICES ]] ; then
+                ((retryTimes++))
+                write_log "debug" "Failed to fetch $namespace/$resType/$resName status. Wait for 2 seconds and retry: $retryTimes ..."
+                sleep 2
+                continue
+            else
+                write_log "fatal" "Failed to fetch $namespace/$resType/$resName status. Please check kubectl command work."
+            fi
+        else
+            write_log "debug" "$namespace/$resType/$resName ready."
+            break
+        fi
+    done
+}
+
+checkK8S(){
+    exec_cmd "kubectl get nodes" 
+    if [[ $? != 0 ]] ; then
+        write_log "fatal" "kubectl command doesn't work, please make sure kubectl command works."
+    fi
+    checkGetResource "" "cm" "core"
+    checkGetResource "" "ds" "core"
+    checkGetResource "" "deployment" "core"
+}
+
+##MAIN##
+source /etc/profile.d/itom-cdf.sh 2>/dev/null || source /etc/profile
+unset HTTP_PROXY; unset HTTPS_PROXY; unset http_proxy; unset https_proxy;
+
+while [[ $# -ge 1 ]] ; do
+    key="${1}"
+    #============ process input parameter and validation =========================
+    case ${key} in
+        -f|--fromVersion)
+            FROM_VERSION="${2}"
+            shift
+        ;;
+        -t|--targetVersion)
+            TARGET_VERSION="${2}"
+            shift
+        ;;
+        -s|--slient)
+            SLIENT_MODE="true"
+        ;;
+        -b|--byok)
+            BYOK="true"
+        ;;
+        -h|--help)
+            print_help
+            exit 0
+        ;;
+        *)
+            print_help
+            write_log "error" "Unknown argument '${key}'. Run -h|--help to get script help."
+        ;;
+    esac
+    shift
+done
+
+if [[ "$BYOK" == "true" ]] ; then
+    LOGFILE=${CURRENT_DIR}/upgrade-`date "+%Y%m%d%H%M%S"`.log
+else
+    if [[ ! -d ${K8S_HOME}/log/scripts/upgradePreCheck ]] ; then
+        mkdir -p ${K8S_HOME}/log/scripts/upgradePreCheck
+    fi
+    LOGFILE=${K8S_HOME}/log/scripts/upgradePreCheck/upgradePreCheck-`date "+%Y%m%d%H%M%S"`.log
+fi
+
+[[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." && exit 1
+[[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." && exit 1
 
 UPGRADE_CHAIN=($(cat ${CURRENT_DIR}/../autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs))
 if [[ $SLIENT_MODE != "true" ]] ; then
     write_log "info" "UPGRADE_CHAIN: ${UPGRADE_CHAIN[*]}"
+fi
+
+#upgrade precheck main process
+if [[ "$BYOK" != "true" ]] ; then
+    execFunc "checkK8S" "201811 202008"
 fi
