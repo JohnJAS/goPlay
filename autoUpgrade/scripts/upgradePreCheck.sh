@@ -87,7 +87,6 @@ getSequenceFromUpgradeChain(){
 execFunc(){
     local function="$1"
     local region=($2)
-    local mandatory="$3"
 
     #upgrade region
     local f=$(getSequenceFromUpgradeChain "$FROM_VERSION")
@@ -193,12 +192,13 @@ fi
 [[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." && exit 1
 [[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." && exit 1
 
-UPGRADE_CHAIN=($(cat ${CURRENT_DIR}/../autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs))
+UPGRADE_CHAIN=("000000" $(cat ${CURRENT_DIR}/../autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs) "999999")
 if [[ $SLIENT_MODE != "true" ]] ; then
     write_log "info" "UPGRADE_CHAIN: ${UPGRADE_CHAIN[*]}"
 fi
 
 #upgrade precheck main process
 if [[ "$BYOK" != "true" ]] ; then
-    execFunc "checkK8S" "201811 202008"
+    # [000000,999999] means all CDF versions
+    execFunc "checkK8S" "000000 999999"
 fi
