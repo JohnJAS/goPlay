@@ -743,6 +743,11 @@ func checkParameters() (err error) {
 //Checking nodes info...
 func checkNodesInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking nodes info...")
+	//copy precheck to workspace, chmod&chown
+
+	//run precheck concurrently
+
+	//clean workspace
 	return
 }
 
