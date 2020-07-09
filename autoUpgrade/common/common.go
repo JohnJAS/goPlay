@@ -1,6 +1,7 @@
 package common
 
 import (
+	"os"
 	"runtime"
 )
 
@@ -23,6 +24,7 @@ const (
 	AutoUpgradeJSON      = "autoUpgrade.json"
 	AutoUpgradeChildJSON = "autoUpgradeChild.json"
 	ACLPROPERTIES        = "acl.properties"
+	UpgradePreCheckSH    = "scripts" + string(os.PathSeparator) + "upgradePreCheck.sh"
 )
 
 //Action Type
@@ -77,6 +79,13 @@ type ConnectionStatus struct {
 //CopyStatus is used in SSH copy check
 type CopyStatus struct {
 	Copied      bool
+	Node        string
+	Description string
+}
+
+//ExecStatus is used in SSH copy check
+type ExecStatus struct {
+	Executed    bool
 	Node        string
 	Description string
 }

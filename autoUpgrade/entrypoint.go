@@ -131,6 +131,11 @@ func init() {
 		log.Fatalln(err)
 	}
 
+	TargetVersion, err = cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 }
 
 func main() {
@@ -592,11 +597,7 @@ func getUpgradePath() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("UPGRADE_CHAIN         : %s", strings.Join(UpgradeChain, " ")))
 
 	fromVersion := transferVersionFormat(OriginVersion, false)
-	targetVersion, err := cdfOS.ReadFile(filepath.Join(CurrentDir, cdfCommon.VersionTXT))
-	if err != nil {
-		return
-	}
-	targetVersion = transferVersionFormat(targetVersion, false)
+	targetVersion := transferVersionFormat(TargetVersion, false)
 
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("FROM_VERSION          : %s", fromVersion))
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("TARGET_VERSION        : %s", targetVersion))
@@ -743,11 +744,101 @@ func checkParameters() (err error) {
 //Checking nodes info...
 func checkNodesInfo() (err error) {
 	cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, "Checking nodes info...")
-	//copy precheck to workspace, chmod&chown
+	//check node info check mark
 
-	//run precheck concurrently
+	//copy precheck to workspace, chmod&chown, run precheck concurrently
+	nodesObj := NodeList.List
+	var nodes []string
+	for _, nodeObj := range nodesObj {
+		nodes = append(nodes, nodeObj.Name)
+	}
 
-	//clean workspace
+	ch := make(chan cdfCommon.ExecStatus, NodeList.Num)
+
+	for _, node := range nodes {
+		go func(node string) {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
+			var cmd string
+			if err == nil {
+				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+			}
+
+			if err == nil {
+				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+			}
+
+			if err == nil {
+				cmd = fmt.Sprintf("chown %s:%s %s/", SysUser, SysGroup, filepath.ToSlash(WorkDir))
+				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+			}
+
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade precheck script to %s ...", node))
+			var conn *ssh.Client
+			if err == nil {
+				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
+			}
+
+			var srcFile, targetFile string
+
+			if err == nil {
+				//copy files with perm
+				srcFile = filepath.Join(CurrentDir, cdfCommon.UpgradePreCheckSH)
+				targetFile = filepath.ToSlash(filepath.Join(WorkDir, filepath.Base(cdfCommon.UpgradePreCheckSH)))
+				err = cdfSSH.CopyFileLocal2Remote(conn, srcFile, targetFile, 700)
+			}
+
+			if err == nil {
+				//copy files with perm
+				srcFile = filepath.Join(CurrentDir, cdfCommon.AutoUpgradeJSON)
+				targetFile = filepath.ToSlash(filepath.Join(WorkDir, filepath.Base(cdfCommon.AutoUpgradeJSON)))
+				err = cdfSSH.CopyFileLocal2Remote(conn, srcFile, targetFile, 600)
+			}
+
+			var outbuf, errbuf bytes.Buffer
+			if err == nil {
+				cmdPath := filepath.ToSlash(filepath.Join(WorkDir))
+				fromVersion := transferVersionFormat(OriginVersion, false)
+				targetVersion := transferVersionFormat(TargetVersion, false)
+				cmd = fmt.Sprintf("%s/upgradePreCheck.sh -f %s -t %s", cmdPath, fromVersion, targetVersion)
+				outbuf, errbuf, err = cdfSSH.SSHExecCmdReturnResult(node, SysUser, KeyPath, PassWord, Port, cmd)
+			}
+
+			if Debug {
+				log.Println(cmd)
+				fmt.Println(outbuf.String())
+				fmt.Println(outbuf.String())
+				fmt.Println(err)
+			}
+
+			if err == nil {
+				ch <- cdfCommon.ExecStatus{true, node, fmt.Sprintf("Node: %s precheck passed.", node)}
+			} else {
+				ch <- cdfCommon.ExecStatus{false, node, fmt.Sprintf("Node: %s precheck failed. Output：%s Error: %s", node, outbuf.String(), errbuf.String())}
+			}
+		}(node)
+	}
+
+	i := 0
+	for result := range ch {
+		if result.Executed {
+			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, result.Description)
+		} else {
+			cdfLog.WriteLog(Logger, cdfCommon.ERROR, LogLevel, result.Description)
+			err = fmt.Errorf("Not all cluster nodes has passed the upgrade precheck.")
+		}
+		i++
+		if i == NodeList.Num {
+			close(ch)
+		}
+	}
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -1091,7 +1182,7 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 
 	files, folders, err = cdfOS.FilePathWalk(VersionPathMap[version])
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	parentDir := cdfOS.ParentDir(CurrentDir)

@@ -1,12 +1,15 @@
 #!/bin/bash
 
 CURRENT_DIR=$(cd `dirname $0`;pwd)
-JQ=${CURRENT_DIR}/../bin/jq
+JQ=${K8S_HOME}/bin/jq
 TIMEOUT_FOR_SERVICES=300
 
+which $JQ >/dev/null || exit 1
+
+
 exec_cmd(){
-    local cmdSubPath="../bin"
-    $CURRENT_DIR/${cmdSubPath}/cmd_wrapper -c "$1" -f $LOGFILE -x=DEBUG $2 $3 $4 $5
+    local cmdSubPath="bin"
+    ${K8S_HOME}/${cmdSubPath}/cmd_wrapper -c "$1" -f $LOGFILE -x=DEBUG $2 $3 $4 $5
     return $?
 }
 
@@ -196,7 +199,7 @@ fi
 [[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." && exit 1
 [[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." && exit 1
 
-UPGRADE_CHAIN=("000000" $(cat ${CURRENT_DIR}/../autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs) "999999")
+UPGRADE_CHAIN=("000000" $(cat ${CURRENT_DIR}/autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs) "999999")
 if [[ $SLIENT_MODE != "true" ]] ; then
     write_log "info" "UPGRADE_CHAIN: ${UPGRADE_CHAIN[*]}"
 fi
