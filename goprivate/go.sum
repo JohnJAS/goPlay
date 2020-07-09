@@ -1,3 +1,5 @@
+github.com/JohnJAS/test v0.0.0-20200709092659-810329318039 h1:yIuU66XOwOsncE+ogYRd3xX3mpgiFPEf9Ui+CFX+xHk=
+github.com/JohnJAS/test v0.0.0-20200709092659-810329318039/go.mod h1:tzUBYR7QTPI42+8RMUQFhW1ZPcsAEKYcd9f790APdj4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 h1:psW17arqaxU48Z5kZ0CQnkZWQJsqcURM6tKiBApRjXI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
