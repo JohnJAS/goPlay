@@ -757,7 +757,7 @@ func checkNodesInfo() (err error) {
 
 	for _, node := range nodes {
 		go func(node string) {
-			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
+			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
 			var cmd string
 			if err == nil {
 				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
@@ -777,7 +777,7 @@ func checkNodesInfo() (err error) {
 				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
 			}
 
-			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade precheck script to %s ...", node))
+			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Copying upgrade precheck script to %s ...", node))
 			var conn *ssh.Client
 			if err == nil {
 				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
