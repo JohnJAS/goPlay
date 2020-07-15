@@ -2,6 +2,8 @@
 
 CURRENT_DIR=$(cd `dirname $0`;pwd)
 JQ=${K8S_HOME}/bin/jq
+[[ ! -f ${JQ} ]] && JQ=${CURRENT_DIR}/bin/jq
+
 TIMEOUT_FOR_SERVICES=300
 
 which $JQ >/dev/null || exit 1
@@ -199,7 +201,12 @@ fi
 [[ $FROM_VERSION == "" ]] && write_log "error" "-f|--fromVersion is mandatory." && exit 1
 [[ $TARGET_VERSION == "" ]] && write_log "error" "-t|--targetVersion is mandatory." && exit 1
 
-UPGRADE_CHAIN=("000000" $(cat ${CURRENT_DIR}/autoUpgrade.json | ${JQ} -r '.[].targetVersion' | sort -h | xargs) "999999")
+AUTOUPGRADEJSON="${CURRENT_DIR}/autoUpgrade.json"
+[[ ! -f ${AUTOUPGRADEJSON} ]] && AUTOUPGRADEJSON="${CURRENT_DIR}/../autoUpgrade.json"
+
+[[ ! -f ${AUTOUPGRADEJSON} ]] && echo "Failed to find autoUpgrade.json" && exit 1
+
+UPGRADE_CHAIN=("000000" $(cat ${AUTOUPGRADEJSON} | ${JQ} -r '.[].targetVersion' | sort -h | xargs) "999999")
 if [[ $SLIENT_MODE != "true" ]] ; then
     write_log "info" "UPGRADE_CHAIN: ${UPGRADE_CHAIN[*]}"
 fi
