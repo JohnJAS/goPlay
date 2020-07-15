@@ -757,18 +757,25 @@ func checkNodesInfo() (err error) {
 
 	for _, node := range nodes {
 		go func(node string) {
+			var conn *ssh.Client
+			if err == nil {
+				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
+			}
+
 			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
 			var cmd string
 			if err == nil {
-				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
-				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				//cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
+				//cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				//err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				err = cdfSSH.RemoveRemoteFolder(conn, filepath.ToSlash(WorkDir))
 			}
 
 			if err == nil {
-				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
-				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				//cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
+				//cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				//err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				err = cdfSSH.CreateRemoteFolder(conn, filepath.ToSlash(WorkDir))
 			}
 
 			if err == nil {
@@ -778,10 +785,6 @@ func checkNodesInfo() (err error) {
 			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, fmt.Sprintf("Copying upgrade precheck script to %s ...", node))
-			var conn *ssh.Client
-			if err == nil {
-				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
-			}
 
 			var srcFile, targetFile string
 
@@ -1239,16 +1242,23 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 		go func(node string) {
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Creating work directory on node %s ...", node))
 			var cmd string
+			var conn *ssh.Client
 			if err == nil {
-				cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
-				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
 			}
 
 			if err == nil {
-				cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
-				cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
-				err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				//cmd = fmt.Sprintf("rm -rf %s/", filepath.ToSlash(WorkDir))
+				//cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				//err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				err = cdfSSH.RemoveRemoteFolder(conn, filepath.ToSlash(WorkDir))
+			}
+
+			if err == nil {
+				//cmd = fmt.Sprintf("mkdir -p %s/", filepath.ToSlash(WorkDir))
+				//cdfLog.WriteLog(Logger, cdfCommon.DEBUG, LogLevel, node+" : "+cmd)
+				//err = cdfSSH.SSHExecCmd(node, SysUser, KeyPath, PassWord, Port, cmd, true)
+				err = cdfSSH.CreateRemoteFolder(conn, filepath.ToSlash(WorkDir))
 			}
 
 			if err == nil {
@@ -1258,11 +1268,6 @@ func copyUpgradePacksToCluster(args ...string) (err error) {
 			}
 
 			cdfLog.WriteLog(Logger, cdfCommon.INFO, LogLevel, fmt.Sprintf("Copying upgrade package to %s ...", node))
-			var conn *ssh.Client
-			if err == nil {
-				conn, err = cdfSSH.CreatSSHClient(node, SysUser, KeyPath, PassWord, Port)
-			}
-
 			if err == nil {
 				//copy files with perm
 				for _, srcFile := range files {
