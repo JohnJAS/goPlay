@@ -79,7 +79,7 @@ func WriteLog(logger *log.Logger, level int, loglevel int, msg string, filePath 
 			log.Println("The log file is " + strings.Join(filePath, ""))
 			logger.Println(msg)
 			logger.SetPrefix(timeStamp + " " + getLevel(level) + " ")
-			logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The CDF autoUpgrade log file is " + strings.Join(filePath, ""))
+			logger.Println("Please refer to the Troubleshooting Guide for help on how to resolve this error.  The log file is " + strings.Join(filePath, ""))
 		}
 	default:
 		if level & loglevel == level {
