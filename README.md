@@ -15,7 +15,7 @@ Test go private
 ## osPkg    
 Test os pkg of golang  
 ## test  
-For fun  
+For go test
 ## threadPool  
 An example of thread pooi in golang  
 ## upgradeJson    
