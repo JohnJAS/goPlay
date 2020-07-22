@@ -4,15 +4,15 @@ This is a project for go practising
 Leedcode pactise of golang  
 ## autoUpgrade  
 Personal pactise of golang  
-## cliTest  
-Test of cli tools -- urfave/cli  
+## cli
+cli tools -- urfave/cli  
 ## cmd  
 Cmd examples of golang  
 ## fileOperator  
 Practise using golang to do something on files and folders  
 ## goprivate  
 Test go private   
-## osPkg    
+## os    
 Test os pkg of golang  
 ## test  
 For go test
