@@ -1,10 +1,4 @@
 package common
 
-//Log level
-const (
-	DEBUG = 1 << iota
-	INFO
-	WARN
-	ERROR
-	FATAL
-)
+const KubeSystemNameSpace = "kube-system"
+const CoreNameSpace = "core"

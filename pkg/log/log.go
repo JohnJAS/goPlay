@@ -4,21 +4,28 @@ import (
 	"log"
 	"strings"
 	"time"
+)
 
-	cdfCommon "github.com/goPlay/pkg/common"
+//Log level
+const (
+	DEBUG = 1 << iota
+	INFO
+	WARN
+	ERROR
+	FATAL
 )
 
 func getLevel(level int) string {
 	switch level {
-	case cdfCommon.DEBUG:
+	case DEBUG:
 		return "DEBUG"
-	case cdfCommon.INFO:
+	case INFO:
 		return "INFO"
-	case cdfCommon.WARN:
+	case WARN:
 		return "WARN"
-	case cdfCommon.ERROR:
+	case ERROR:
 		return "ERROR"
-	case cdfCommon.FATAL:
+	case FATAL:
 		return "FATAL"
 	default:
 		return ""
@@ -27,16 +34,16 @@ func getLevel(level int) string {
 
 func getLogLevel(loglevel int) int {
 	switch loglevel {
-	case cdfCommon.DEBUG:
-		return cdfCommon.DEBUG | cdfCommon.INFO | cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
-	case cdfCommon.INFO:
-		return cdfCommon.INFO | cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
-	case cdfCommon.WARN:
-		return cdfCommon.WARN | cdfCommon.ERROR | cdfCommon.FATAL
-	case cdfCommon.ERROR:
-		return cdfCommon.ERROR | cdfCommon.FATAL
-	case cdfCommon.FATAL:
-		return cdfCommon.FATAL
+	case DEBUG:
+		return DEBUG | INFO | WARN | ERROR | FATAL
+	case INFO:
+		return INFO | WARN | ERROR | FATAL
+	case WARN:
+		return WARN | ERROR | FATAL
+	case ERROR:
+		return ERROR | FATAL
+	case FATAL:
+		return FATAL
 	default:
 		return 0
 	}
@@ -45,15 +52,15 @@ func getLogLevel(loglevel int) int {
 func TransferLogLevel(logLevel string) int {
 	switch logLevel {
 	case "DEBUG":
-		return cdfCommon.DEBUG
+		return DEBUG
 	case "INFO":
-		return cdfCommon.DEBUG
+		return DEBUG
 	case "WARN":
-		return cdfCommon.WARN
+		return WARN
 	case "ERROR":
-		return cdfCommon.ERROR
+		return ERROR
 	case "FATAL":
-		return cdfCommon.FATAL
+		return FATAL
 	default:
 		return 0
 	}
@@ -69,11 +76,11 @@ func WriteLog(logger *log.Logger, level int, loglevel int, msg string, filePath 
 	loglevel = getLogLevel(loglevel)
 
 	switch level {
-	case cdfCommon.DEBUG:
+	case DEBUG:
 		if level & loglevel == level {
 			logger.Println(msg)
 		}
-	case cdfCommon.FATAL:
+	case FATAL:
 		if level & loglevel == level {
 			log.Println(msg)
 			log.Println("The log file is " + strings.Join(filePath, ""))
