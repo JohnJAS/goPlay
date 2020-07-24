@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/urfave/cli/v2"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,11 +10,13 @@ import (
 	cdfCommon "github.com/JohnJAS/goPlay/pkg/common"
 	cdfLog "github.com/JohnJAS/goPlay/pkg/log"
 	cdfOS "github.com/JohnJAS/goPlay/pkg/os"
-
+	"github.com/urfave/cli/v2"
 )
 
 //program env
 var currentDir string
+var logPath string
+var logger *log.Logger
 
 var k8sHome string
 
@@ -42,11 +44,14 @@ func init() {
 	}
 
 	//test on windows
-	//os.Setenv(cdfCommon.K8SHome,"C:\\tmp")
+	os.Setenv(cdfCommon.K8SHome, "C:\\tmp")
 	k8sHome = os.Getenv(cdfCommon.K8SHome)
 	if k8sHome == "" {
 		log.Fatal("failed to get the value of K8S_HOME")
 	}
+
+	logPath = filepath.Join(k8sHome, "log", "scripts", "upgradePreCheck-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
+
 }
 
 func main() {
@@ -55,9 +60,8 @@ func main() {
 	os.Args = append(os.Args, "-t")
 	os.Args = append(os.Args, "202011")
 
-	logger := initLogger()
+	logger = initLogger(logPath)
 	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, "Current directory : "+currentDir)
-
 
 	app := &cli.App{
 		Name:            "upgradePreCheck",
@@ -107,9 +111,7 @@ func main() {
 	}
 }
 
-func initLogger() (logger *log.Logger){
-	path := filepath.Join(k8sHome, "log","scripts", "upgradePreCheck-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
-
+func initLogger(path string) (logger *log.Logger) {
 	var file *os.File
 	var err error
 	file, err = cdfOS.CreateFile(path)
@@ -122,5 +124,12 @@ func initLogger() (logger *log.Logger){
 }
 
 func preCheck(c *cli.Context) (err error) {
+
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, fmt.Sprintf("fromVersion   : %v", fromVersion))
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, fmt.Sprintf("targetVersion : %v", targetVersion))
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, fmt.Sprintf("silentMode    : %v", silentMode))
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, fmt.Sprintf("byokMode      : %v", byokMode))
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, fmt.Sprintf("debugMode     : %v", debugMode))
+
 	return
 }
