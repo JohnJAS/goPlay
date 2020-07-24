@@ -8,7 +8,8 @@ import (
 	"time"
 
 	cdfCommon "github.com/JohnJAS/goPlay/pkg/common"
-	cdflog "github.com/JohnJAS/goPlay/pkg/log"
+	cdfLog "github.com/JohnJAS/goPlay/pkg/log"
+	cdfOS "github.com/JohnJAS/goPlay/pkg/os"
 
 )
 
@@ -40,8 +41,10 @@ func init() {
 		log.Fatalln(err)
 	}
 
+	//test on windows
+	//os.Setenv(cdfCommon.K8SHome,"C:\\tmp")
 	k8sHome = os.Getenv(cdfCommon.K8SHome)
-	if k8sHome == "" || k8sHome == nil {
+	if k8sHome == "" {
 		log.Fatal("failed to get the value of K8S_HOME")
 	}
 }
@@ -52,8 +55,8 @@ func main() {
 	os.Args = append(os.Args, "-t")
 	os.Args = append(os.Args, "202011")
 
-	var logger *log.Logger
-
+	logger := initLogger()
+	cdfLog.WriteLog(logger, cdfLog.DEBUG, cdfLog.DEBUG, "Current directory : "+currentDir)
 
 
 	app := &cli.App{
@@ -104,12 +107,18 @@ func main() {
 	}
 }
 
-func startLog() (logger *log.Logger, err error){
+func initLogger() (logger *log.Logger){
 	path := filepath.Join(k8sHome, "log","scripts", "upgradePreCheck-"+time.Now().UTC().Format(cdfCommon.TIMESTAMP)+".log")
 
+	var file *os.File
+	var err error
+	file, err = cdfOS.CreateFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-
-	return
+	//initialize logger
+	return log.New(file, "", 0)
 }
 
 func preCheck(c *cli.Context) (err error) {
