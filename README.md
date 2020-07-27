@@ -1,22 +1,33 @@
 # goPlay
-This is a project for go practising  
-## addTwoNumber  
+**This is a project for go practising**  
+
+## Directories
+`/addTwoNumber` 
 Leedcode pactise of golang  
-## autoUpgrade  
-Personal pactise of golang  
-## cli
+
+`/autoUpgrade` 
+Personal pactise of golang
+  
+`/cli` 
 cli tools -- urfave/cli  
-## cmd  
+
+`/cmd` 
 Cmd examples of golang  
-## fileOperator  
+
+`/fileOperator` 
 Practise using golang to do something on files and folders  
-## goprivate  
-Test go private   
-## os    
+
+`/goprivate` 
+Test go private
+   
+`/os` 
 Test os pkg of golang  
-## test  
+
+`/test`  
 For go test
-## threadPool  
+
+`/threadPool` 
 An example of thread pooi in golang  
-## upgradeJson    
+
+`/upgradeJson` 
 Test json operation in golang  
