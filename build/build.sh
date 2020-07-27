@@ -3,6 +3,7 @@
 CURRENT_DIR=${PWD}
 
 WORKSPACE=${CURRENT_DIR}/../goPlay
+OUTPUT_FOLDER=${CURRENT_DIR}/output
 OS=linux
 ARCH=amd64
 GO_VERSION=1.14.6
@@ -11,7 +12,7 @@ while [[ ${#} -gt 0 ]]; do
     case "$1" in
         -w|--workspace ) WORKSPACE=${1}
         shift;;
-        -o|--output) OUTPUT_FOLDER=${CURRENT_DIR}/output
+        -o|--output) OUTPUT_FOLDER=${1}
         shift;;
         --os ) OS=${1}
         shift;;
