@@ -27,6 +27,4 @@ if [[ ! -d $OUTPUT_FOLDER ]] ; then
     mkdir -p $OUTPUT_FOLDER
 fi
 
-GO_PATH=$(go env GOPATH)
-
-docker run --name build-upgrade-v${GO_VERSION} --privileged --rm -v ${WORKSPACE}:/workspace -v ${OUTPUT_FOLDER}:/output -v ${GO_PATH}:/hostgopath  --workdir /workspace golang:${GO_VERSION} bash build/buildInsideContainer.sh
+docker run --name build-upgrade-v${GO_VERSION} --privileged --rm -v ${WORKSPACE}:/workspace -v ${OUTPUT_FOLDER}:/output --workdir /workspace golang:${GO_VERSION} bash build/buildInsideContainer.sh
