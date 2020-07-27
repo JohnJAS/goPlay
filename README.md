@@ -5,32 +5,46 @@ This is a project for me to practise golang.
 Viva La Vida.
 
 ## Directories
-### `/addTwoNumber`  
+### `/addTwoNumber`
+
 Leedcode pactise of golang  
 
-### `/autoUpgrade`  
+### `/autoUpgrade`
+
 Personal pactise of golang
   
-### `/cli`  
+### `/cli`
+
 cli tools -- urfave/cli  
 
-### `/cmd`  
+### `/cmd`
+
 Cmd examples of golang  
 
-### `/fileOperator`  
+### `/fileOperator`
+
 Practise using golang to do something on files and folders  
 
-### `/goprivate`  
+### `/goprivate`
+
 Test go private
    
-### `/os`  
+### `/os`
+
 Test os pkg of golang  
 
-### `/test`  
+### `/test`
+
 For go test
 
-### `/threadPool`  
+### `/threadPool`
+
 An example of thread pooi in golang  
 
-### `/upgradeJson`  
-Test json operation in golang  
+### `/upgradeJson`
+
+Test json operation in golang
+
+### `/upgradePreCheck`
+
+Refactor upgradePreCheck and test build code with private registry
