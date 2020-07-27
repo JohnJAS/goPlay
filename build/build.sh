@@ -2,7 +2,7 @@
 
 CURRENT_DIR=${PWD}
 
-WORKSPACE=${CURRENT_DIR}/../goPlay
+WORKSPACE=${CURRENT_DIR}/../../goPlay
 OUTPUT_FOLDER=${CURRENT_DIR}/output
 OS=linux
 ARCH=amd64
@@ -27,4 +27,4 @@ if [[ ! -d $OUTPUT_FOLDER ]] ; then
     mkdir -p $OUTPUT_FOLDER
 fi
 
-docker run --name build-upgrade-v${GO_VERSION} --privileged --rm -v ${WORKSPACE}:/workspace -v ${OUTPUT_FOLDER}:/output --workdir /workspace golang:${GO_VERSION} "bash /workspace/build/buildInsideContainer.sh"
+docker run --name build-upgrade-v${GO_VERSION} --privileged --rm -v ${WORKSPACE}:/workspace -v ${OUTPUT_FOLDER}:/output --workdir /workspace golang:${GO_VERSION} "bash build/buildInsideContainer.sh"
