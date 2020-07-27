@@ -13,9 +13,11 @@ endif
 
 all: compile
 
-debug:
+check:
 	@echo "UNAME_S: ${UNAME_S}, OS: ${OS}, ARCH: ${ARCH}"
 
 compile:
-	@echo "Compiling on ${OS}..."
-	GO111MODULE=on CGO_ENABLED=0 GOOS=${OS} GOARCH=${ARCH} go build -ldflags "-w" .
+	@echo "Compiling linux version..."
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" .
+  @echo "Compiling windows version..."
+	GO111MODULE=on CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-w" .
