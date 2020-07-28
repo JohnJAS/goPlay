@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	cdfCommon "github.com/JohnJAS/goPlay/pkg/common"
@@ -44,7 +45,9 @@ func init() {
 	}
 
 	//test on windows
-	os.Setenv(cdfCommon.K8SHome, "C:\\tmp")
+	if runtime.GOOS == "windows" {
+		os.Setenv(cdfCommon.K8SHome, "C:\\tmp")
+	}
 	k8sHome = os.Getenv(cdfCommon.K8SHome)
 	if k8sHome == "" {
 		log.Fatal("failed to get the value of K8S_HOME")
