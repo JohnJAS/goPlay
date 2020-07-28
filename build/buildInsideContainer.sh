@@ -10,6 +10,7 @@ go env -w GOPRIVATE=github.com/JohnJAS/*
 export https_proxy=web-proxy.us.softwaregrp.net:8080
 export http_proxy=web-proxy.us.softwaregrp.net:8080
 
+#===============================================================================================================================#
 cd ${CURRENT_DIR}/autoUpgrade
 
 echo "Building autoUpgrade linux version..."
@@ -21,6 +22,9 @@ echo "Building autoUpgrade windows version..."
 GO111MODULE=on CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-w" -o $OUTPUT_FOLDER/autoUpgrade/autoUpgrade.exe
 [[ $? == 0 ]] && echo "success" || echo "failed"
 
-echo "Building upgradePreCheck"
+#===============================================================================================================================#
+cd ${CURRENT_DIR}/upgradePreCheck
+
+echo "Building upgradePreCheck only linux version..."
 GO111MODULE=on CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-w" -o $OUTPUT_FOLDER/upgradePreCheck/upgradePreCheck
 [[ $? == 0 ]] && echo "success" || echo "failed"
