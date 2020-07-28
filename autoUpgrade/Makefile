@@ -19,5 +19,5 @@ check:
 compile:
 	@echo "Compiling linux version..."
 	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" .
-  @echo "Compiling windows version..."
+	@echo "Compiling windows version..."
 	GO111MODULE=on CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-w" .
