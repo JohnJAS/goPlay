@@ -3,7 +3,6 @@
 CURRENT_DIR=${PWD}
 
 git config --global url."git@github.com:".insteadOf "https://github.com/"
-go env -w GOPROXY=https://goproxy.cn/
 go env -w GOPRIVATE=github.com/JohnJAS/*
 
 export https_proxy=web-proxy.us.softwaregrp.net:8080
