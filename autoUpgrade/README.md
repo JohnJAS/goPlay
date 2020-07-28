@@ -8,7 +8,7 @@ Support on both windows and linux.
 
 ### 1. Build with docker container
 
-go to build folder and run buildCLL.sh to build with docker container
+run buildCLL.sh to build with docker container, details inside readme file under build folder
 
 `bash build/buildCLI.sh`
 
