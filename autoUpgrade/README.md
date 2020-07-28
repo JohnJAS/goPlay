@@ -1,6 +1,8 @@
-# upgradePreCheck
+# autoUpgrade
 
-This is a pre-check program called by autoUpgrade and upgrade.
+Automatically upgrade CDF. 
+
+Support on both windows and linux.
 
 ## How to complile
 
@@ -16,4 +18,8 @@ go to build folder and run buildCLL.sh to build with docker container
 
 *This makefile is just make it simple to build upgradePreCheck for test. Since golang version depends on your env, it is recommended to build with docker container for production use.*
 
-`make`
+Build autoUpgrade binary
+`make all`
+
+Check current env
+`make check`
