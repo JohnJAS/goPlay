@@ -1,3 +1,3 @@
-module github.com/JohnJAS/goPlay
+module goPlay
 
 go 1.14
