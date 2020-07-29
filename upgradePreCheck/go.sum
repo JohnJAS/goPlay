@@ -1,6 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/JohnJAS/goPlay v0.0.0-20200724025600-b54f80ca2ee0 h1:1XyBv3j02BHpn55yA9b+CaHs/naRg2cXnlNVMkPvEjw=
-github.com/JohnJAS/goPlay v0.0.0-20200724025600-b54f80ca2ee0/go.mod h1:dhMTAU0Hl10Vmwhjh624NCS0Yrr7VIJau849tCW04W8=
+github.com/JohnJAS/goPlay v0.0.0-20200729163338-a943a3df5266 h1:DkjByOKDFGh+rrDyxYh5hJeOzkszcrHwSxm9pYhZO2E=
+github.com/JohnJAS/goPlay v0.0.0-20200729163338-a943a3df5266/go.mod h1:dhMTAU0Hl10Vmwhjh624NCS0Yrr7VIJau849tCW04W8=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
