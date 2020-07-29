@@ -1,4 +1,4 @@
-module github.com/JohnJAS/goPlay/upgradePreCheck
+module upgradePreCheck
 
 go 1.14
 
