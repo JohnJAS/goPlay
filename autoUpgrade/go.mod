@@ -1,6 +1,6 @@
 module autoUpgrade
 
-go 1.13
+go 1.14
 
 require (
 	github.com/pkg/sftp v1.11.0
