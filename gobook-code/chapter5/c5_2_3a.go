@@ -6,18 +6,14 @@ package main
 
 import (
 	"fmt"
-)
-
-//工作池的goroutine数目
-const (
-	NUMBER = 10
+	"sync"
 )
 
 //工作任务
 type task struct {
 	begin  int
 	end    int
-	result chan<- int
+	result chan<- int //只写通道,send-only
 }
 
 //任务处理:计算begin到end的和
@@ -31,8 +27,6 @@ func (t *task) do() {
 }
 
 func main() {
-	workers := NUMBER
-
 	//工作通道
 	taskchan := make(chan task, 10)
 
@@ -40,16 +34,13 @@ func main() {
 	resultchan := make(chan int, 10)
 
 	//worker信号通道
-	done := make(chan struct{}, 10)
+	wg := &sync.WaitGroup{}
 
-	//初始化task的goroutine,计算1000个自然数之和
-	go InitTask(taskchan, resultchan, 1000)
+	//初始化task的goroutine,计算100个自然数之和
+	go InitTask(taskchan, resultchan, 100)
 
 	//分发任务在NUMBER个goroutine 池
-	DistributeTask(taskchan, workers, done)
-
-	//获取各个goroutine处理完任务的通知，并关闭结果通道
-	go CloseResult(done, resultchan, workers)
+	DistributeTask(taskchan, resultchan, wg)
 
 	//通过结果通道处理结果
 	sum := ProcessResult(resultchan)
@@ -58,17 +49,17 @@ func main() {
 }
 
 //初始化待处理task chan
-func InitTask(taskchan chan<- task, r chan int, p int) {
-	qu := p / 10
-	mod := p % 10
-	high := qu * 10
+func InitTask(taskchan chan<- task, resultchan chan int, p int) {
+	qu := p / 10    //每10个数一个区间
+	mod := p % 10   //剩余不满10个数的单独一个区间
+	high := qu * 10 //整区间最大值
 	for j := 0; j < qu; j++ {
 		b := 10*j + 1
 		e := 10 * (j + 1)
 		tsk := task{
-			begin:  b,
-			end:    e,
-			result: r,
+			begin:  b, //10*j + 1
+			end:    e, //10*j + 10
+			result: resultchan,
 		}
 		taskchan <- tsk
 	}
@@ -76,7 +67,7 @@ func InitTask(taskchan chan<- task, r chan int, p int) {
 		tsk := task{
 			begin:  high + 1,
 			end:    p,
-			result: r,
+			result: resultchan,
 		}
 		taskchan <- tsk
 	}
@@ -85,28 +76,21 @@ func InitTask(taskchan chan<- task, r chan int, p int) {
 }
 
 //读取task chan 分发到worker goroutine 处理，workers的总的数量是workers
-func DistributeTask(taskchan <-chan task, workers int, done chan struct{}) {
+func DistributeTask(taskchan <-chan task, resultchan chan int, wg *sync.WaitGroup) {
 
-	for i := 0; i < workers; i++ {
-		go ProcessTask(taskchan, done)
+	for task := range taskchan {
+		wg.Add(1)
+		go ProcessTask(task, wg)
 	}
+	wg.Wait()
+	close(resultchan)
 }
 
 //工作goroutine处理具体工作，并将处理结构发送到结果chan
-func ProcessTask(taskchan <-chan task, done chan struct{}) {
-	for t := range taskchan {
-		t.do()
-	}
-	done <- struct{}{}
-}
+func ProcessTask(t task, wg *sync.WaitGroup) {
+	t.do()
+	wg.Done()
 
-//通过done channel来同步等待所有工作goroutine的结束，然后关闭结果chan
-func CloseResult(done chan struct{}, resultchan chan int, workers int) {
-	for i := 0; i < workers; i++ {
-		<-done
-	}
-	close(done)
-	close(resultchan)
 }
 
 // 读取结果通道，汇总结果

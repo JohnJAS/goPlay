@@ -14,7 +14,7 @@ import (
 func chain(in chan int) chan int {
 	out := make(chan int)
 	go func() {
-		for v := range in {
+		for v := range in {//直到关闭前，都会持续监控
 			out <- 1 + v
 		}
 		close(out)
