@@ -39,7 +39,6 @@ kind: DaemonSet
 metadata:
   labels:
     k8s-app: kube-proxy
-    #addonmanager.kubernetes.io/mode: Reconcile
   name: kube-proxy
   namespace: kube-system
 spec:
@@ -79,6 +78,13 @@ spec:
         - --hostname-override=$(NODE_NAME)
         securityContext:
           privileged: true
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz
+            port: 10256
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
         volumeMounts:
         - mountPath: /var/lib/kube-proxy
           name: kube-proxy
