@@ -61,7 +61,6 @@ spec:
       hostNetwork: true
       nodeSelector:
         kubernetes.io/os: linux
-        master: "true"
         #node.kubernetes.io/kube-proxy-ds-ready: "true"
       tolerations:
       - operator: "Exists"
