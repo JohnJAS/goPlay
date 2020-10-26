@@ -40,6 +40,7 @@ func main() {
 	fmt.Println("type.Kind.String:", rt.Kind().String())
 	fmt.Println("type.String()=", rt.String())
 
+	fmt.Println("*********************************************")
 	//获取结构类型那个的字段名称
 	for i := 0; i < rt.NumField(); i++ {
 		fmt.Printf("type.Field[%d].Name:=%v \n", i, rt.Field(i).Name)
@@ -51,7 +52,7 @@ func main() {
 
 	//获取slice元素的Type
 	scet := sct.Elem()
-
+	fmt.Println("*********************************************")
 	fmt.Println("slice element type.Kind()=", scet.Kind())
 	fmt.Printf("slice element type.Kind()=%d\n", scet.Kind())
 	fmt.Println("slice element type.String()=", scet.String())
