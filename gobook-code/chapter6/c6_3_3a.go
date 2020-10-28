@@ -15,7 +15,7 @@ func f2() {
 func main() {
 	funcs := make(map[string]func())
 	funcs["f1"] = f1
-	funcs["f2"] = f1
+	funcs["f2"] = f2
 
 	funcs["f1"]()
 	funcs["f2"]()
