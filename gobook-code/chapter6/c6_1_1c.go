@@ -23,7 +23,7 @@ func Info(o interface{}) {
 	//获取Value信息
 	v := reflect.ValueOf(o)
 
-	//通过Vlue获取Type
+	//通过Value获取Type
 	t := v.Type()
 
 	//类型名称
@@ -34,6 +34,8 @@ func Info(o interface{}) {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i).Interface()
+
+		fmt.Printf("Field:%d type:%T value:%v\n", i, v.Field(i), v.Field(i))
 
 		//类型查询
 		switch value := value.(type) {

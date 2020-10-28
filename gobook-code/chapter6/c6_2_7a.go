@@ -25,7 +25,7 @@ func main() {
 	fmt.Println(va.CanSet(), va.FieldByName("Name").CanSet()) //false false
 
 	//指针类型是可修改的
-	fmt.Println(vb.CanSet(), vb.Elem().FieldByName("Name").CanSet()) //false false
+	fmt.Println(vb.CanSet(), vb.Elem().FieldByName("Name").CanSet()) //false true
 
 	fmt.Printf("%v\n", vb)
 	name := "shine"
