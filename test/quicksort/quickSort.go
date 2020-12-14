@@ -14,27 +14,27 @@ func quickSort(a []int, l, r int) {
 	ol := l
 	or := r
 
-	if l > r || r < l {
+	if l > r  {
 		return
 	}
 
 	m := a[l]
 
-	for l != r {
-		for a[r] >= m && l != r {
+	for l < r {
+		for a[r] >= m {
+			if l == r {
+				break
+			}
 			r--
 		}
-		if l != r {
-			a[l] = a[r]
+		a[l] = a[r]
+		for a[l] < m {
+			if l == r {
+				break
+			}
 			l++
 		}
-		for a[l] < m && l != r {
-			l++
-		}
-		if l != r {
-			a[r] = a[l]
-			r--
-		}
+		a[r] = a[l]
 
 	}
 
