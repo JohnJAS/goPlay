@@ -24,7 +24,7 @@ func main() {
 								Context: new(emptyCtx),
 		                   }
 	*/
-	go work(ctxa, "work1")
+	go work(ctxa, "workA")
 
 	//Construct a *timerCtx type object wrapped by *cancelCtx
 	tm := time.Now().Add(3 * time.Second)
@@ -37,7 +37,7 @@ func main() {
 							}
 			同时触发ctxa ，在children 中维护ctxb 作为子节点
 	*/
-	go work(ctxb, "work2")
+	go work(ctxb, "workB")
 
 	oc := otherContext{ctxb}
 	//Construct a *cancelCtx type object wrapped by oc
@@ -49,9 +49,11 @@ func main() {
 		同时通过oc.C ontext 找到ctxb ，通过ctxb . cancelCtx 找到ctxa ，在ctxa 的children
 		字段中维护ctxc 作为其子节点
 	*/
-	go workWithValue(ctxc, "work3")
+	go workWithValue(ctxc, "workC")
 
+	//adjust 10s to 1s, see what happened
 	time.Sleep(10 * time.Second)
+	//time.Sleep(1 * time.Second)
 	cancel()
 	time.Sleep(5 * time.Second)
 	fmt.Println("main stop")
