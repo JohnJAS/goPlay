@@ -24,7 +24,15 @@ func main() {
 	if err != nil {
 		//只有接口变量才能进行类型断言
 		if err, ok := err.(*upgradeCheckError); ok {
-			fmt.Printf("%v", err.warning)
+			fmt.Printf("%v\n", err.warning)
 		}
+
+		switch err.(type) {
+		case *upgradeCheckError:
+			fmt.Printf("%T\n", err)
+		default:
+			fmt.Println("I don't know.")
+		}
+
 	}
 }
