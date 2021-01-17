@@ -19,8 +19,10 @@ func (err *upgradeCheckError) Error() string {
 }
 
 func main() {
+	//注意,此处err为error接口变量
 	err := New()
 	if err != nil {
+		//只有接口变量才能进行类型断言
 		if err, ok := err.(*upgradeCheckError); ok {
 			fmt.Printf("%v", err.warning)
 		}
