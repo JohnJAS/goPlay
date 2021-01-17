@@ -51,5 +51,6 @@ func main() {
 
 //*main.St 0x0 <nil>
 //*main.St 0x0 <nil>
+//true
 //st is nil
 //pang
