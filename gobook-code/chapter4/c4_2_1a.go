@@ -21,10 +21,10 @@ type St struct {
 }
 
 func (St) Ping() {
-	println("ping")
+	fmt.Println("ping")
 }
 func (*St) Pang() {
-	println("pang")
+	fmt.Println("pang")
 }
 
 func main() {
@@ -36,9 +36,10 @@ func main() {
 	o.Ping()
 	o.Pang()
 
-	//如下语句会引发panic，
-	//p := i.(Anter)
-	//p.String()
+	//不加类型断言会报错
+	if p, ok := i.(Anter); ok {
+		p.String()
+	}
 
 	//判断i绑定的实例是否就是具体类型St
 	s := i.(*St)
