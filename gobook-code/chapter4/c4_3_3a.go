@@ -68,4 +68,12 @@ func main() {
 //*main.St 0x0 <nil>
 //true
 //st is nil
+//*main.St
+//<nil>
 //pang
+//*main.St
+//<nil>
+//tt is nil
+//<nil>
+//<invalid reflect.Value>
+
