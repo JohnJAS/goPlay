@@ -51,4 +51,4 @@ Refactor upgradePreCheck and test build code with private registry
 
 ### `/gobook-code`
 
-Source code from the book of golang core coding
+Source code from the book of golang core coding!

@@ -17,8 +17,9 @@ func main() {
 	url := fmt.Sprintf("https://%s:%s", server, port)
 
 	// Load client cert
-	key := "/opt/kubernetes/ssl/kubectl-kube-api-client.key"
-	cert := "/opt/kubernetes/ssl/kubectl-kube-api-client.crt"
+	key := "/opt/kubernetes/ssl/kubernetes.key"
+	cert := "/opt/kubernetes/ssl/kubernetes.crt"
+	ca := "/opt/kubernetes/ssl/ca.crt"
 
 	clientCert, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
@@ -26,20 +27,21 @@ func main() {
 	}
 
 	// Load CA cert
-	caCert, err := ioutil.ReadFile("/opt/kubernetes/ssl/ca.crt")
+	caCert, err := ioutil.ReadFile(ca)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      caCertPool,
+	}
+
 	client := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{clientCert},
-				RootCAs:      caCertPool,
-			},
+			TLSClientConfig: tlsConfig,
 		},
 	}
 
@@ -50,5 +52,7 @@ func main() {
 	}
 
 	fmt.Println(response)
+	fmt.Println(response.Body)
+	fmt.Println(response.Header.Get("Date"))
 
 }
