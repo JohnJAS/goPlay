@@ -1,3 +1,5 @@
 .idea/
 nohup.out
 mycobra/mycobra.exe
+upgrade/cmd/upgrade/upgrade
+upgrade/cmd/upgrade/upgrade.exe

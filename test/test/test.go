@@ -1,54 +1,52 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"os"
 )
 
-//链表节点
-type ListNode struct {
-	Value int
-	Next  *ListNode
+func conv(str string) (int, error) {
+	slice := []byte(str)
+
+	// check the first character
+	if slice[0] == '+' || slice[0] == '-' {
+		slice = slice[1:]
+		if len(slice) <= 0 {
+			return 0, errors.New("error")
+		}
+	}
+
+	//sum
+	var n int
+	for _, ch := range slice {
+		ch = ch - '0'
+		if ch > '9' {
+			return 0, errors.New("error")
+		}
+		n = n*10 + int(ch)
+	}
+
+	if str[0] == '-' {
+		n = -n
+	}
+
+	return n, nil
 }
 
-//反转链表的实现
-func reversrList(head *ListNode) (reverseHead *ListNode) {
-	if head == nil {
-		return
-	}
+func reverse(str string) string{
+	slice := []byte(str)
 
-	for head != nil {
-
-		node := &ListNode{
-			head.Value,
-			reverseHead,
-		}
-		reverseHead = node
-
-		head = head.Next
-	}
+	for from, to := 0, len(slice) - 1 ;
 
 	return
 }
 
 func main() {
-	head := new(ListNode)
-	head.Value = 1
-	ln2 := new(ListNode)
-	ln2.Value = 2
-	ln3 := new(ListNode)
-	ln3.Value = 3
-	ln4 := new(ListNode)
-	ln4.Value = 4
-	ln5 := new(ListNode)
-	ln5.Value = 5
-	head.Next = ln2
-	ln2.Next = ln3
-	ln3.Next = ln4
-	ln4.Next = ln5
-
-	result := reversrList(head)
-	for result != nil {
-		fmt.Println(result)
-		result = result.Next
+	strArr := []string{
+		"10",
+		"-100",
+		"+1000",
 	}
-}
+
+	fmt.Println("*********************")
