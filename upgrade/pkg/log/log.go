@@ -1,107 +1,67 @@
 package cdflog
 
 import (
-	"fmt"
+	"github.com/rs/zerolog"
+	"io"
 	"os"
+	"time"
 )
 
 const (
-	LogLevel = "LOG_LEVEL"
+	LogLevelEnv = "LOG_LEVEL"
 )
-
-// Level defines log levels.
-type Level int8
-
-//cdf Logger
-type Logger struct {
-	Printor
-}
-
-type Printor interface {
-	Debug(msg string)
-	Info(msg string)
-	Warn(msg string)
-	Error(msg string)
-	Fatal(msg string)
-	Panic(msg string)
-	None(msg string)
-	Trace(msg string)
-}
 
 var (
-	GlobalLogLevel = os.Getenv(LogLevel)
+	EnvLogLevel = os.Getenv(LogLevelEnv)
 )
 
-const (
-	// DebugLevel defines debug log level.
-	DebugLevel Level = iota
-	// InfoLevel defines info log level.
-	InfoLevel
-	// WarnLevel defines warn log level.
-	WarnLevel
-	// ErrorLevel defines error log level.
-	ErrorLevel
-	// FatalLevel defines fatal log level.
-	FatalLevel
-	// PanicLevel defines panic log level.
-	PanicLevel
-	// NoLevel defines an absent log level.
-	NoLevel
-	// Disabled disables the logger.
-	Disabled
-
-	// TraceLevel defines trace log level.
-	TraceLevel Level = -1
-)
-
-func (l Level) String() string {
-	switch l {
-	case TraceLevel:
-		return "trace"
-	case DebugLevel:
-		return "debug"
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case FatalLevel:
-		return "fatal"
-	case PanicLevel:
-		return "panic"
-	case NoLevel:
-
-		return ""
-	}
-	return ""
+type FilteredWriter struct {
+	zerolog.ConsoleWriter
+	level zerolog.Level
 }
 
-// ParseLevel converts a level string into a zerolog Level value.
-// returns an error if the input string does not match known values.
-func ParseLevel(levelStr string) (Level, error) {
-	switch levelStr {
-	case LevelFieldMarshalFunc(TraceLevel):
-		return TraceLevel, nil
-	case LevelFieldMarshalFunc(DebugLevel):
-		return DebugLevel, nil
-	case LevelFieldMarshalFunc(InfoLevel):
-		return InfoLevel, nil
-	case LevelFieldMarshalFunc(WarnLevel):
-		return WarnLevel, nil
-	case LevelFieldMarshalFunc(ErrorLevel):
-		return ErrorLevel, nil
-	case LevelFieldMarshalFunc(FatalLevel):
-		return FatalLevel, nil
-	case LevelFieldMarshalFunc(PanicLevel):
-		return PanicLevel, nil
-	case LevelFieldMarshalFunc(NoLevel):
-		return NoLevel, nil
+func (w FilteredWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err error) {
+	if level >= w.level {
+		return w.Write(p)
 	}
-	return NoLevel, fmt.Errorf("Unknown Level String: '%s', defaulting to NoLevel", levelStr)
+	return len(p), nil
 }
 
-// LevelFieldMarshalFunc allows customization of global level field marshaling
-var LevelFieldMarshalFunc = func(l Level) string {
-	return l.String()
+type WriterList []io.Writer
+
+func NewZeroLog(file *os.File, level zerolog.Level) zerolog.Logger {
+
+	writers := NewWriter(file)
+
+	levelWriter := zerolog.MultiLevelWriter(writers...)
+
+	logger := zerolog.New(levelWriter).With().Timestamp().Logger()
+
+	if level == 0 {
+		if EnvLogLevel != "" {
+			lvl, _ := zerolog.ParseLevel(EnvLogLevel)
+			zerolog.SetGlobalLevel(lvl)
+		}
+	}
+
+	return logger
+}
+
+func NewWriter(file *os.File) (wl WriterList) {
+	wl = append(wl, FilteredWriter{
+		zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339Nano,
+			NoColor:    true,
+		},
+		zerolog.InfoLevel,
+	})
+	if file != nil {
+		wl = append(wl, zerolog.ConsoleWriter{
+			Out:        file,
+			TimeFormat: time.RFC3339Nano,
+			NoColor:    true,
+		})
+	}
+	return
 }

@@ -8,16 +8,16 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	cdflog "upgrade/pkg/log"
 )
 
-//TempFolder is autoUpgrade temp folder including re-run mark and auto upgrade log
 var tempFolder string
 
-var logFilePath string
+var logfilePath string
 
 var logfile *os.File
 
-var upgradelog *zerolog.Logger
+var upgradeLog *zerolog.Logger
 
 //init logger
 func init() {
@@ -32,22 +32,22 @@ func init() {
 		tempFolder = "/tmp"
 	}
 
-	//create log file
-	path := filepath.Join(tempFolder, "upgrade", "upgrade-"+time.Now().UTC().Format("20060102150405")+".log")
-	os.MkdirAll(filepath.Dir(path), 0644)
-	logfile, _ = os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-
-	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	logFileWriter := zerolog.ConsoleWriter{Out: logfile, TimeFormat: time.RFC3339}
-
-	multi := zerolog.MultiLevelWriter(consoleWriter, logFileWriter)
-
-	logger := zerolog.New(multi).With().Timestamp().Logger()
-
-	upgradelog = &logger
+	//identify logfilePath
+	logfilePath = filepath.Join(tempFolder, "upgrade", "upgrade-"+time.Now().UTC().Format("20060102150405")+".log")
 }
 
 func main() {
-	upgradelog.Info().Msgf("upgrade info")
-	upgradelog.Debug().Msgf("upgrade debug")
+	upgradeLog = startLog(logfilePath)
+	defer logfile.Close()
+
+	//testlog
+	upgradeLog.Info().Msgf("upgrade info")
+	upgradeLog.Debug().Msgf("upgrade debug")
+}
+
+func startLog(path string) *zerolog.Logger {
+	os.MkdirAll(filepath.Dir(path), 0644)
+	logfile, _ = os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	logger := cdflog.NewZeroLog(logfile, 0)
+	return &logger
 }

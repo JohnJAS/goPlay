@@ -27,9 +27,9 @@ func tranferPattern(pattern []rune, key string) (string, interVal) {
 			index = append(index, i)
 		}
 	}
-	for i, v := range index{
-
-	}
+	//for i, v := range index{
+	//
+	//}
 
 	return "", interVal{0, 0}
 }
@@ -50,7 +50,7 @@ func is_match(pattern, input string) bool {
 
 	pattern, interVal := tranferPattern(patternSlice, key)
 	pattern = "of{4,7}ice"
-	interVal := interVal{4, 7}
+	//interVal := interVal{4, 7}
 	fmt.Println(pattern)
 	fmt.Println(interVal)
 
