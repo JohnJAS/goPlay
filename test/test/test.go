@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
 )
 
 func conv(str string) (int, error) {
@@ -34,12 +33,14 @@ func conv(str string) (int, error) {
 	return n, nil
 }
 
-func reverse(str string) string{
+func reverse(str string) string {
 	slice := []byte(str)
 
-	for from, to := 0, len(slice) - 1 ;
+	for from, to := 0, len(slice)-1; from < to; from, to = from+1, to-1 {
+		slice[from], slice[to] = slice[to], slice[from]
+	}
 
-	return
+	return string(slice)
 }
 
 func main() {
@@ -49,4 +50,13 @@ func main() {
 		"+1000",
 	}
 
-	fmt.Println("*********************")
+	for _, str := range strArr {
+		i, _ := conv(str)
+		fmt.Println(i)
+	}
+
+	testStr := "asdjfjafwofeowfjoiwefj"
+
+	fmt.Println(reverse(testStr))
+
+}
