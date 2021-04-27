@@ -9,7 +9,7 @@ func newRootCmd() (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   "upgrade.sh  [-i|--infra ] | [-u|--upgrade] | [-c|--clean] [Options]",
 		Short: "Upgrade CDF infrastructure and components",
-		Long:  `./upgrade.sh  [-i|--infra ] | [-u|--upgrade] | [-c|--clean] [Options]`,
+		Long:  `Upgrade CDF infrastructure on each nodes. Upgrade CDF component on any master node.`,
 	}
 
 	cmd.AddCommand(newInfraCmd())
