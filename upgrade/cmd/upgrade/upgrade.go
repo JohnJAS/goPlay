@@ -25,7 +25,7 @@ func init() {
 	if runtime.GOOS == "windows" {
 		usr, err := user.Current()
 		if err != nil {
-			log.Fatal("Failed to get current user info, initailization failed.")
+			log.Fatal("Failed to get current user info, initialization failed.")
 		}
 		tempFolder = filepath.Join(usr.HomeDir, "tmp")
 	} else {
@@ -41,8 +41,20 @@ func main() {
 	defer logfile.Close()
 
 	//testlog
-	upgradeLog.Info().Msgf("upgrade info")
-	upgradeLog.Debug().Msgf("upgrade debug")
+	upgradeLog.Info().Msgf("log upgrade info for testing")
+	time.Sleep(time.Second * 1)
+	upgradeLog.Debug().Msgf("log upgrade debug for testing")
+
+	cmd, err := newRootCmd()
+	if err != nil {
+		upgradeLog.Error().Msgf("log upgrade error for testing")
+		os.Exit(1)
+	}
+
+	if err := cmd.Execute(); err != nil {
+		upgradeLog.Error().Msgf("log upgrade error for testing")
+	}
+
 }
 
 func startLog(path string) *zerolog.Logger {

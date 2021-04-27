@@ -15,6 +15,8 @@ var (
 	EnvLogLevel = os.Getenv(LogLevelEnv)
 )
 
+type WriterList []io.Writer
+
 type FilteredWriter struct {
 	zerolog.ConsoleWriter
 	level zerolog.Level
@@ -26,8 +28,6 @@ func (w FilteredWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err er
 	}
 	return len(p), nil
 }
-
-type WriterList []io.Writer
 
 func NewZeroLog(file *os.File, level zerolog.Level) zerolog.Logger {
 
@@ -48,20 +48,29 @@ func NewZeroLog(file *os.File, level zerolog.Level) zerolog.Logger {
 }
 
 func NewWriter(file *os.File) (wl WriterList) {
-	wl = append(wl, FilteredWriter{
+	fw := FilteredWriter{
 		zerolog.ConsoleWriter{
 			Out:        os.Stdout,
-			TimeFormat: time.RFC3339Nano,
+			TimeFormat: time.RFC3339,
 			NoColor:    true,
 		},
 		zerolog.InfoLevel,
-	})
+	}
+	fw.FormatLevel = func(interface{}) string {
+		return ""
+	}
+	fw.FormatTimestamp = func(interface{}) string {
+		return ""
+	}
+	wl = append(wl, fw)
+
 	if file != nil {
 		wl = append(wl, zerolog.ConsoleWriter{
 			Out:        file,
-			TimeFormat: time.RFC3339Nano,
+			TimeFormat: time.RFC3339,
 			NoColor:    true,
 		})
 	}
+
 	return
 }
