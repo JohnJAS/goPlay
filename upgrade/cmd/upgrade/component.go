@@ -5,10 +5,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newInfraCmd() *cobra.Command {
+func newComponentCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "infra",
-		Aliases: []string{"i"},
+		Use:     "upgrade",
+		Aliases: []string{"u"},
 		Short:   "Upgrade CDF infrastructure",
 		Long: `
 ***********************************************************************************
@@ -24,16 +24,10 @@ func newInfraCmd() *cobra.Command {
 ***********************************************************************************
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Pretend to upgrade CDF infrastructure.")
+			fmt.Println("Pretend to upgrade CDF components.")
 			return nil
 		},
 	}
-
-	var drain bool
-	var drainTimeOut string
-
-	cmd.Flags().BoolVar(&drain, "drain", false, "Drain node before upgrade. It only takes effect during executing upgrade infra on worker nodes.")
-	cmd.Flags().StringVar(&drainTimeOut, "drain-timeout", "3600", "The length of time to wait before giving up to drain the node. Default is 3600 seconds.")
 
 	return cmd
 }

@@ -10,6 +10,7 @@ func newVersionCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "version",
+		Aliases: []string{"v"},
 		Short: "Print the version number of CDF upgrade",
 		Long:  `All software has versions. This is CDF upgrade's`,
 		Run: func(cmd *cobra.Command, args []string) {
