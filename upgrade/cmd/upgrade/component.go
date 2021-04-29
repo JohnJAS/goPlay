@@ -9,19 +9,15 @@ func newComponentCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "upgrade",
 		Aliases: []string{"u"},
-		Short:   "Upgrade CDF infrastructure",
+		Short:   "Upgrade CDF components",
 		Long: `
 ***********************************************************************************
-   WARNING: This step is used to upgrade CDF infrastructure to 2021.05 release.
+   WARNING: This step is used to upgrade CDF components to ${TARGET_RELEASE_VERSION_WITH_DOT} release. 
             The upgrade process is irreversible. You can NOT roll back.
             Make sure that all nodes in your cluster are in Ready status.
             Make sure that all Pods and Services are Running.
 
-   NOTE:    You need to provide one temporary directory for saving the files for
-            upgrade.
-            Please make sure the directory has sufficient free space.
-
-***********************************************************************************
+***********************************************************************************"
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("Pretend to upgrade CDF components.")

@@ -33,7 +33,7 @@ func newInfraCmd() *cobra.Command {
 	var drainTimeOut string
 
 	cmd.Flags().BoolVar(&drain, "drain", false, "Drain node before upgrade. It only takes effect during executing upgrade infra on worker nodes.")
-	cmd.Flags().StringVar(&drainTimeOut, "drain-timeout", "3600", "The length of time to wait before giving up to drain the node. Default is 3600 seconds.")
+	cmd.Flags().StringVar(&drainTimeOut, "drain-timeout", "3600", "The length of time(second) to wait before giving up to drain the node.")
 
 	return cmd
 }
