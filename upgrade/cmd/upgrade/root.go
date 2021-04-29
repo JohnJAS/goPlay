@@ -8,14 +8,16 @@ func newRootCmd() (*cobra.Command, error) {
 	// rootCmd represents the base command when called without any subcommands
 	cmd := &cobra.Command{
 		Use:   "upgrade {-i|--infra} | {-u|--upgrade} | {-c|--clean} [Flags]",
-		Short: "Upgrade CDF infrastructure and components",
+		Short: "CDF upgrade",
 		Long:  `Upgrade CDF infrastructure and components. Command: upgrade {-i|--infra} | {-u|--upgrade} | {-c|--clean} [Options]`,
 	}
 
+	//add subcommand
 	cmd.AddCommand(newInfraCmd())
 	cmd.AddCommand(newComponentCmd())
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
+	//add global flags
 	var confirm bool
 	var backupFolder string
 
