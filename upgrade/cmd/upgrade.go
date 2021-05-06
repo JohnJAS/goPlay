@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
-	cdflog "upgrade/pkg/log"
+	"upgrade/cmd/upgrade"
+	cdfLog "upgrade/pkg/log"
 )
 
 var tempFolder string
@@ -45,7 +46,7 @@ func main() {
 	time.Sleep(time.Second * 1)
 	upgradeLog.Debug().Msgf("log upgrade debug for testing")
 
-	cmd, err := newRootCmd()
+	cmd, err := upgrade.NewRootCmd()
 	if err != nil {
 		upgradeLog.Error().Msgf("log upgrade error for testing")
 		os.Exit(1)
@@ -60,6 +61,6 @@ func main() {
 func startLog(path string) *zerolog.Logger {
 	os.MkdirAll(filepath.Dir(path), 0644)
 	logfile, _ = os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	logger := cdflog.NewZeroLog(logfile, 0)
+	logger := cdfLog.NewZeroLog(logfile, 0)
 	return &logger
 }

@@ -1,10 +1,10 @@
-package main
+package upgrade
 
 import (
 	"github.com/spf13/cobra"
 )
 
-func newRootCmd() (*cobra.Command, error) {
+func NewRootCmd() (*cobra.Command, error) {
 	// rootCmd represents the base command when called without any subcommands
 	cmd := &cobra.Command{
 		Use:     "upgrade",
