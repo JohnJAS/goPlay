@@ -2,21 +2,57 @@ package upgrade
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"io"
+	"text/template"
+	"upgrade/internal/version"
 )
 
-func newVersionCmd() *cobra.Command {
+type versionOptions struct {
+	short    bool
+	template string
+}
+
+func newVersionCmd(out io.Writer) *cobra.Command {
+	o := &versionOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "version",
-		Aliases: []string{"v"},
-		Short: "Print the version number of CDF upgrade",
-		Long:  `All software has versions. This is CDF upgrade's`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("CDF upgrade Static Site Generator v0.9 -- HEAD")
+		Short: "print the client version information",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return o.run(out)
 		},
 	}
+	f := cmd.Flags()
+	f.BoolVar(&o.short, "short", false, "print the version number")
+	f.StringVar(&o.template, "template", "", "template for version string format")
+	f.BoolP("client", "c", true, "display client version information")
+	f.MarkHidden("client")
 
 	return cmd
+
+	return cmd
+}
+
+func (o *versionOptions) run(out io.Writer) error {
+	if o.template != "" {
+		tt, err := template.New("_").Parse(o.template)
+		if err != nil {
+			return err
+		}
+		return tt.Execute(out, version.Get())
+	}
+	fmt.Fprintln(out, formatVersion(o.short))
+	return nil
+}
+
+func formatVersion(short bool) string {
+	v := version.Get()
+	if short {
+		if len(v.GitCommit) >= 7 {
+			return fmt.Sprintf("%s+g%s", v.Version, v.GitCommit[:7])
+		}
+		return version.GetVersion()
+	}
+	return fmt.Sprintf("%#v", v)
 }

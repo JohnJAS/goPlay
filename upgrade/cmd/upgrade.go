@@ -42,11 +42,11 @@ func main() {
 	defer logfile.Close()
 
 	//testlog
-	upgradeLog.Info().Msgf("log upgrade info for testing")
-	time.Sleep(time.Second * 1)
-	upgradeLog.Debug().Msgf("log upgrade debug for testing")
+	//upgradeLog.Info().Msgf("log upgrade info for testing")
+	//time.Sleep(time.Second * 1)
+	//upgradeLog.Debug().Msgf("log upgrade debug for testing")
 
-	cmd, err := upgrade.NewRootCmd()
+	cmd, err := upgrade.NewRootCmd(upgradeLog)
 	if err != nil {
 		upgradeLog.Error().Msgf("log upgrade error for testing")
 		os.Exit(1)
