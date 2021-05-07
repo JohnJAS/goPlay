@@ -1,9 +1,7 @@
 package version
 
 import (
-	"flag"
 	"runtime"
-	"strings"
 )
 
 var (
@@ -43,23 +41,12 @@ func GetVersion() string {
 	return version + "+" + metadata
 }
 
-// GetUserAgent returns a user agent for user with an HTTP client
-func GetUserAgent() string {
-	return "Helm/" + strings.TrimPrefix(GetVersion(), "v")
-}
-
 // Get returns build info
 func Get() BuildInfo {
-	v := BuildInfo{
+	return BuildInfo{
 		Version:      GetVersion(),
 		GitCommit:    gitCommit,
 		GitTreeState: gitTreeState,
 		GoVersion:    runtime.Version(),
 	}
-
-	// HACK(bacongobbler): strip out GoVersion during a test run for consistent test output
-	if flag.Lookup("test.v") != nil {
-		v.GoVersion = ""
-	}
-	return v
 }
