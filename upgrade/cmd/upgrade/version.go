@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"io"
+	"os"
 	"text/template"
 	"upgrade/internal/version"
 )
@@ -13,7 +14,9 @@ type versionOptions struct {
 	template string
 }
 
-func newVersionCmd(out io.Writer) *cobra.Command {
+func newVersionCmd() *cobra.Command {
+	out := os.Stdout
+
 	o := &versionOptions{}
 
 	cmd := &cobra.Command{

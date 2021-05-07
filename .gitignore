@@ -3,5 +3,5 @@ nohup.out
 mycobra/mycobra.exe
 upgrade/cmd/upgrade/upgrade
 upgrade/cmd/upgrade/upgrade.exe
-upgrade/cmd/upgrade/cmd
-upgrade/cmd/upgrade/cmd.exe
+upgrade/cmd/cmd
+upgrade/cmd/cmd.exe

@@ -46,9 +46,9 @@ func main() {
 	//time.Sleep(time.Second * 1)
 	//upgradeLog.Debug().Msgf("log upgrade debug for testing")
 
-	cmd, err := upgrade.NewRootCmd(upgradeLog)
+	cmd, err := upgrade.NewRootCmd()
 	if err != nil {
-		upgradeLog.Error().Msgf("log upgrade error for testing")
+		log.Printf("error usage: %v\n", err)
 		os.Exit(1)
 	}
 

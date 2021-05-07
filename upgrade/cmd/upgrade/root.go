@@ -2,10 +2,9 @@ package upgrade
 
 import (
 	"github.com/spf13/cobra"
-	"io"
 )
 
-func NewRootCmd(io io.Writer) (*cobra.Command, error) {
+func NewRootCmd() (*cobra.Command, error) {
 	// rootCmd represents the base command when called without any subcommands
 	cmd := &cobra.Command{
 		Use:     "upgrade",
@@ -18,7 +17,7 @@ func NewRootCmd(io io.Writer) (*cobra.Command, error) {
 	cmd.AddCommand(newInfraCmd())
 	cmd.AddCommand(newComponentCmd())
 	cmd.AddCommand(newCleanCommand())
-	cmd.AddCommand(newVersionCmd(io))
+	cmd.AddCommand(newVersionCmd())
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	//add global flags
