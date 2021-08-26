@@ -1,62 +1,155 @@
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
 )
 
-func conv(str string) (int, error) {
-	slice := []byte(str)
+type CMD struct {
+	name    string
+	args    []string
+	stdout  io.ReadCloser
+	stderr  io.ReadCloser
+	print   bool
+	timeout int
+	cancel  context.CancelFunc
 
-	// check the first character
-	if slice[0] == '+' || slice[0] == '-' {
-		slice = slice[1:]
-		if len(slice) <= 0 {
-			return 0, errors.New("error")
-		}
-	}
-
-	//sum
-	var n int
-	for _, ch := range slice {
-		ch = ch - '0'
-		if ch > '9' {
-			return 0, errors.New("error")
-		}
-		n = n*10 + int(ch)
-	}
-
-	if str[0] == '-' {
-		n = -n
-	}
-
-	return n, nil
+	buff []byte
 }
 
-func reverse(str string) string {
-	slice := []byte(str)
-
-	for from, to := 0, len(slice)-1; from < to; from, to = from+1, to-1 {
-		slice[from], slice[to] = slice[to], slice[from]
-	}
-
-	return string(slice)
+func Shell(script string) *CMD {
+	return Command("/bin/bash", "-c", script)
 }
 
-func main() {
-	strArr := []string{
-		"10",
-		"-100",
-		"+1000",
+func Command(name string, args ...string) *CMD {
+	return &CMD{name: name, args: args}
+}
+
+func (cmd *CMD) readPrint() ([]byte, error) {
+	extend := func(n int) {
+		tmp := make([]byte, cap(cmd.buff)+n)
+		copy(tmp, cmd.buff)
+		cmd.buff = tmp[:len(cmd.buff)]
+	}
+	read := func() (b []byte, err error) {
+		n := 1024
+		rear := len(cmd.buff)
+		if rear+n > cap(cmd.buff) {
+			extend(1024 + n)
+		}
+		n, err = cmd.stdout.Read(cmd.buff[rear : rear+n])
+		cmd.buff = cmd.buff[:rear+n]
+		return cmd.buff[rear : rear+n], err
 	}
 
-	for _, str := range strArr {
-		i, _ := conv(str)
-		fmt.Println(i)
+	for {
+		b, err := read()
+		fmt.Printf("%s", b)
+		if err != nil {
+			if err.Error() == "EOF" {
+				return cmd.buff, nil
+			} else {
+				return nil, err
+			}
+		}
 	}
+}
 
-	testStr := "asdjfjafwofeowfjoiwefj"
+func (cmd *CMD) Print2Console() *CMD {
+	cmd.print = true
+	return cmd
+}
 
-	fmt.Println(reverse(testStr))
+func (cmd *CMD) SetTimeout(t int) *CMD {
+	cmd.timeout = t
+	return cmd
+}
+
+func (cmd *CMD) Cancel() {
+	if cmd.cancel != nil {
+		cmd.cancel()
+	}
+}
+
+func (cmd *CMD) buildCtxt() (ctx context.Context, command *exec.Cmd) {
+	if cmd.timeout > 0 {
+		ctx, cmd.cancel = context.WithTimeout(context.Background(), time.Duration(cmd.timeout)*time.Second)
+	} else {
+		ctx, cmd.cancel = context.WithCancel(context.Background())
+	}
+	command = exec.CommandContext(ctx, cmd.name, cmd.args...)
+	return
+}
+
+func (cmd *CMD) Run() (stdout, stderr []byte, err error, retCode int) {
+	ctx, command := cmd.buildCtxt()
+
+	defer func() {
+		if err != nil {
+			retCode = -1000
+			log.Printf("Run CMD err: %s(%+v)", err, ctx.Err())
+		}
+		err = command.Wait()
+		if err != nil {
+			// unknown error code
+			retCode = -1
+			if e, ok := err.(*exec.ExitError); ok {
+				if status, ok := e.Sys().(syscall.WaitStatus); ok {
+					retCode = status.ExitStatus()
+				}
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					err = ctxErr
+					switch ctxErr {
+					case context.Canceled:
+						log.Printf("cmd [%s] canceled", cmd.name)
+					case context.DeadlineExceeded:
+						log.Printf("run cmd [%s] timeout", cmd.name)
+					}
+				}
+			}
+		}
+		cmd.cancel()
+	}()
+
+	cmd.stdout, err = command.StdoutPipe()
+	if err != nil {
+		return
+	}
+	cmd.stderr, err = command.StderrPipe()
+	if err != nil {
+		return
+	}
+	log.Printf("Run CMD: %s %v", cmd.name, cmd.args)
+	err = command.Start()
+	if err != nil {
+		return
+	}
+	//pid := command.Process.Pid
+	if cmd.print {
+		stdout, err = cmd.readPrint()
+	} else {
+		stdout, err = ioutil.ReadAll(cmd.stdout)
+	}
+	if err != nil {
+		return
+	}
+	stderr, err = ioutil.ReadAll(cmd.stderr)
+	if err != nil {
+		return
+	}
+	if cmd.print {
+		fmt.Printf("%s", stderr)
+	}
+	return
+}
+
+func main(){
+	_,_,_,_ = Command("hostname").Run()
 
 }
