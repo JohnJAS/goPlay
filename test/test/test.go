@@ -151,5 +151,6 @@ func (cmd *CMD) Run() (stdout, stderr []byte, err error, retCode int) {
 
 func main(){
 	_,_,_,_ = Command("hostname").Run()
-
+	//commit3
+	//commit2
 }
