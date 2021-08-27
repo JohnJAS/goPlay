@@ -149,8 +149,14 @@ func (cmd *CMD) Run() (stdout, stderr []byte, err error, retCode int) {
 	return
 }
 
-func main(){
-	_,_,_,_ = Command("hostname").Run()
-	//commit3
-	//commit2
+func main() {
+	stdout, stderr, err, retCode := Command("hostname").Print2Console().Run()
+
+	fmt.Println("*****************************")
+
+	fmt.Println("stdout:" + string(stdout))
+	fmt.Println("stderr:" + string(stderr))
+	fmt.Printf("err: %v\n", err)
+	fmt.Printf("retCode: %d\n", retCode)
+
 }
