@@ -1,5 +1,5 @@
 /***
-one producer multiple consumer
+multiple producer one consumer
 */
 package main
 
@@ -26,41 +26,24 @@ var messages = []string{
 	"Mr. Robot",
 }
 
-var consumerNum = 3
+const producerCount int = 3
+const consumerCount int = 3
 
-func producer(pipeline chan <-string){
-	for _, str := range messages {
-		pipeline <- str
-	}
-	close(pipeline)
+var workers []*producers
+
+type producers struct {
+	myQ  chan string
+	quit chan bool
+	id   int
 }
 
-
-func consumer(pipeline <-chan string, done chan<- struct{}){
-	for{
-		select{
-		case str,ok := <- pipeline:
-			if ok {
-				fmt.Println(str)
-			}else{
-				done<-struct {}{}
-				break
-			}
-		default:
-
-		}
-	}
+func comsumer(workerPool chan *producers){
 }
-
 
 func main(){
-	pipeline := make(chan string)
-	done := make(chan struct{})
+	workerPool := make(chan *producers)
 
-	go producer(pipeline)
-	for i:=0; i< consumerNum; i++{
-		go consumer(pipeline,done)
+	for _,str := range messages {
+
 	}
-
-	<- done
 }
