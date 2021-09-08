@@ -3,8 +3,6 @@ multiple producer one consumer
 */
 package main
 
-import "fmt"
-
 var messages = []string{
 	"The world itself's",
 	"just one big hoax.",
@@ -37,13 +35,17 @@ type producers struct {
 	id   int
 }
 
-func comsumer(workerPool chan *producers){
+func comsumer(workerPool chan *producers) {
 }
 
-func main(){
-	workerPool := make(chan *producers)
+func producer(ch chan int, i int) {
+	ch <- i
+}
 
-	for _,str := range messages {
+func main() {
+	ch := make(chan int)
 
+	for i := 0; i <= 10; i++ {
+		go producer(ch, i)
 	}
 }
