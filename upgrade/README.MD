@@ -1,1 +1,0 @@
-This is a spike of rewriting CDF upgrade by Golang.
