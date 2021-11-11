@@ -5,3 +5,5 @@ upgrade/cmd/upgrade/upgrade
 upgrade/cmd/upgrade/upgrade.exe
 upgrade/cmd/cmd
 upgrade/cmd/cmd.exe
+playground/playground.exe
+playground/playground

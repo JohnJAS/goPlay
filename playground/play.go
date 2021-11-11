@@ -1,61 +1,112 @@
+// Example application that uses all of the available API options.
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
+	"log"
+	"time"
+
+	"github.com/briandowns/spinner"
 )
 
 func main() {
-	const provided_CA = `
------BEGIN CERTIFICATE-----
-MIIFMjCCAxoCCQC3JYP/A1NRkjANBgkqhkiG9w0BAQsFADBbMQswCQYDVQQGEwJD
-TjEVMBMGA1UEBwwMRGVmYXVsdCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBh
-bnkgTHRkMRcwFQYDVQQDDA4xNi4xNTUuMTk4LjI1MjAeFw0yMTExMDgwNjAyNTha
-Fw0yMTEyMDgwNjAyNThaMFsxCzAJBgNVBAYTAkNOMRUwEwYDVQQHDAxEZWZhdWx0
-IENpdHkxHDAaBgNVBAoME0RlZmF1bHQgQ29tcGFueSBMdGQxFzAVBgNVBAMMDjE2
-LjE1NS4xOTguMjUyMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0y0q
-2Ij4fKqnVJkL0J4qfl95IcBsaWPIgD7Bxjk2s3P8NceDV0Lq3Mexmc6HWCcxG3yn
-+dv5ZELYni9/USpKn+PTHV6S3/gNCIqk8/0sa6aPW0gXv6uezb5MRG1ktilOTD2r
-sXufRUrJghjbs3iYThZxpbGhezDeHYX3ms5buHMpJUERkrOeYzxJ3xZXQ9HN9rF2
-wuR+TaaPENABlhW716it5ZV7l95sC3v+LzJ3YMQ8ZNbPzxhYYDPidiRXdCMHnPMz
-8htBwih5h5khZDE5/ppTgFUhVyG7XPGQHQLtKwIYsKbYh3j/m0XcBD+5F6wyQcx+
-Ucw1PNu4mJ+WRzRyrJBEj5iVejg1mrH7XdiBhqP7z0CJb6vCOxsXBmNtC9vRG95X
-dJ1XQ1JuoNnaywJ5Z5ktNNEbrTf6BsYEmQTddmnTopEPgBpo+KfY153IYzAZVONS
-zK6HbheXuAUfbJq5zALywnpgy6T+W+YsLQNJ66AahJY7FxdKYK/fNUKkBNSDADjI
-XsyeRI5fGJBp8zM8mpGXL+OiUAoNEhYgrJPem3DW+IrIDzLcsKwrgFqya3JiABX2
-eO4plxxdro7tqs/5sMvQId/kAkJYdXQq4E9jrJVK4PO0MiEP9wrZg8kttrrWNqP1
-naQeVag21l4EeUmv26GSobM9UBgx+21EVr4HiXkCAwEAATANBgkqhkiG9w0BAQsF
-AAOCAgEAJ29BBdF7ldUClaA+oHmtKmduGDJZp/qrxsdwaA/MqlWpKCgz8sZSE6LH
-TYZWcgeJU/R4gQ+7FEXJVMkt6WjqITUN8K9SYeN6oJ2mm4kkgLGEhfbIg7Bid9UD
-GZFKUEb5gewX2eRrT/PUkZD0036OlgJE5gbHo4sTA4i+Dt2RXmvehjyK4kYQRerd
-Mqf30wBs0JXuW+Ih4Aml3px2mRtkLa65kodOjTt9GqGbAgSlAeZUtDmzuXnhxZVI
-D3l9a6vWltuQgSOmHdXwdoBIjFNyyftKF8QhuAGdK7AyiUMVPbcLqB2SqsPiRjcL
-dEPwG6J2ZLv5Hcn1bbAHm1EzJ15MPuPUsQ+uJm4kEwXfJ6/r1yXDrvGhWRGZj7Ml
-7tBtdDN2s9Sp/ImKZC06PcTjSVFJ06IFMNsF7LRHBIw0vcQN6PnSs2ogRjrq0yFK
-4eZ7WnMQ/Y0gAJ3ZhCdcM0qdyqVQQHioZdhDBzI3uwKBLCX+kJM+8KUUT5EAPeSk
-XQKpCf0BR46ZV0U6RQmg8lIdLFExEFd3nuBv+dbgN5pVmsLQh1HUth+OMUox0YLo
-CmXKzmHlAxCdVqr85cN/98l7OgYH/AwGAWedhC23Gzni+KsvSTRGdMJnPzI9uqSe
-OdtubtNbNegCnl6JyT4Ycvcbx7FD4/Ec3adKLM0ntSdiQ0Pe8r0=
------END CERTIFICATE-----`
-	// First, create the set of root certificates. For this example we only
-	// have one. It's also possible to omit this in order to use the
-	// default root set of the current operating system.
-	roots := x509.NewCertPool()
+	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond) // Build our new spinner
+	s.Color("red")                                              // Set the spinner color to red
+	s.Start()                                                   // Start the spinner
+	time.Sleep(4 * time.Second)                                 // Run for some time to simulate work
 
-	block, _ := pem.Decode([]byte(provided_CA))
-	if block == nil {
-		panic("failed to parse certificate PEM")
-	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		panic("failed to parse certificate: " + err.Error())
+	s.UpdateCharSet(spinner.CharSets[9])  // Update spinner to use a different character set
+	s.UpdateSpeed(100 * time.Millisecond) // Update the speed the spinner spins at
+
+	s.Prefix = "prefixed text: " // Prefix text before the spinner
+	time.Sleep(4 * time.Second)
+	s.Prefix = ""
+	s.Suffix = "  :appended text" // Append text after the spinner
+	time.Sleep(4 * time.Second)
+
+	s.Prefix = "Colors: "
+
+	if err := s.Color("yellow"); err != nil {
+		log.Fatalln(err)
 	}
 
-	opts := x509.VerifyOptions{
-		Roots:   roots,
+	s.Start()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("red"); err != nil {
+		log.Fatalln(err)
 	}
 
-	if _, err := cert.Verify(opts); err != nil {
-		panic("failed to verify certificate: " + err.Error())
+	s.UpdateCharSet(spinner.CharSets[20])
+	s.Reverse()
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("blue"); err != nil {
+		log.Fatalln(err)
 	}
+
+	s.UpdateCharSet(spinner.CharSets[3])
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("cyan"); err != nil {
+		log.Fatalln(err)
+	}
+
+	s.UpdateCharSet(spinner.CharSets[28])
+
+	s.Reverse()
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("green"); err != nil {
+		log.Fatalln(err)
+	}
+
+	s.UpdateCharSet(spinner.CharSets[25])
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("magenta"); err != nil {
+		log.Fatalln(err)
+	}
+
+	s.UpdateCharSet(spinner.CharSets[32])
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	if err := s.Color("white"); err != nil {
+		log.Fatalln(err)
+	}
+
+	s.FinalMSG = "Complete!\nNew line!\nAnother one!\n"
+
+	s.UpdateCharSet(spinner.CharSets[31])
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	s.Stop() // Stop the spinner
+
+	s.Prefix = "Earth! "
+	s.UpdateCharSet(spinner.CharSets[39])
+
+	s.Restart()
+
+	time.Sleep(4 * time.Second) // Run for some time to simulate work
+
+	s.Stop() // Stop the spinner
+
+	println("")
 }
