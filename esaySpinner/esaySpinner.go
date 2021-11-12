@@ -54,6 +54,11 @@ func WithHiddenCursor(hideCursor bool) Option {
 	}
 }
 
+func (s *Spinner) WithHiddenCursor(hideCursor bool) *Spinner {
+	s.HideCursor = hideCursor
+	return s
+}
+
 // WithWriter adds the given writer to the spinner. This
 // function should be favored over directly assigning to
 // the struct value.
@@ -65,12 +70,22 @@ func WithWriter(w io.Writer) Option {
 	}
 }
 
+func (s *Spinner) WithWriter(w io.Writer) *Spinner {
+	s.Writer = w
+	return s
+}
+
 // WithFinalMSG adds the given string ot the spinner
 // as the final message to be written.
 func WithFinalMSG(finalMsg string) Option {
 	return func(s *Spinner) {
 		s.FinalMSG = finalMsg
 	}
+}
+
+func (s *Spinner) WithFinalMSG(finalMsg string) *Spinner {
+	s.FinalMSG = finalMsg
+	return s
 }
 
 // Active will return whether or not the spinner is currently active.
