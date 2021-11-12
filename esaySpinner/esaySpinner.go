@@ -5,13 +5,15 @@ import (
 	"io"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 type Spinner struct {
-	mu       *sync.RWMutex //
-	chars    []string      // chars holds the chosen character set
-	active   bool          // active holds the state of the spinner
-	stopChan chan struct{} // stopChan is a channel used to stop the indicator
+	mu         *sync.RWMutex //
+	chars      []string      // chars holds the chosen character set
+	active     bool          // active holds the state of the spinner
+	stopChan   chan struct{} // stopChan is a channel used to stop the indicator
+	lastOutput string        // last character(set) written
 	*Options
 }
 
@@ -121,7 +123,8 @@ func (s *Spinner) Start() {
 					}
 					s.erase()
 
-					outPlain := fmt.Sprintf("\r%s ", s.chars[i])
+					outPlain := fmt.Sprintf("%s", s.chars[i])
+					s.lastOutput = s.chars[i]
 					fmt.Fprint(s.Writer, outPlain)
 					delay := s.Delay
 
@@ -155,7 +158,13 @@ func (s *Spinner) Stop() {
 // erase deletes written characters.
 // Caller must already hold s.lock.
 func (s *Spinner) erase() {
-	fmt.Fprintf(s.Writer, "\033[K") // erases to end of line
+	n := utf8.RuneCountInString(s.lastOutput)
+	if n == 0 {
+		fmt.Fprintf(s.Writer, "\033[K") // erases to end of line from the position of cursor
+	} else {
+		fmt.Fprintf(s.Writer, "\033[%dD\033[K", n) // erases to end of line from beginning of cursor
+	}
+	s.lastOutput = ""
 }
 
 // Lock allows for manual control to lock the spinner.
