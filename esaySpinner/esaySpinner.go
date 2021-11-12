@@ -97,9 +97,9 @@ func (s *Spinner) Active() bool {
 
 // Start will start the indicator.
 func (s *Spinner) Start() {
-	s.Lock()
+	s.mu.Lock()
 	if s.active {
-		s.Unlock()
+		s.mu.Unlock()
 		return
 	}
 	if s.HideCursor {
@@ -107,7 +107,7 @@ func (s *Spinner) Start() {
 		fmt.Fprint(s.Writer, "\033[?25l")
 	}
 	s.active = true
-	s.Unlock()
+	s.mu.Unlock()
 
 	go func() {
 		for {
@@ -116,15 +116,15 @@ func (s *Spinner) Start() {
 				case <-s.stopChan:
 					return
 				default:
-					s.Lock()
+					s.mu.Lock()
 					if !s.active {
-						s.Unlock()
+						s.mu.Unlock()
 						return
 					}
-					s.erase()
 					outPlain := fmt.Sprintf("%s", s.chars[i])
 					s.lastOutput = s.chars[i]
 					fmt.Fprint(s.Writer, outPlain)
+					s.erase()
 					delay := s.Delay
 					s.mu.Unlock()
 					time.Sleep(delay)
@@ -157,10 +157,13 @@ func (s *Spinner) Stop() {
 // Caller must already hold s.lock.
 func (s *Spinner) erase() {
 	n := utf8.RuneCountInString(s.lastOutput)
-	if n == 0 {
-		fmt.Fprintf(s.Writer, "\033[K") // erases to end of line from the position of cursor
-	} else {
-		fmt.Fprintf(s.Writer, "\033[%dD\033[K", n) // erases to end of line from beginning of cursor
+	//if n == 0 {
+	//	fmt.Fprintf(s.Writer, "\033[K") // erases to end of line from the position of cursor
+	//} else {
+	//	fmt.Fprintf(s.Writer, "\033[%dD\033[K", n) // erases to end of line from beginning of cursor
+	//}
+	if n != 0 {
+		fmt.Fprintf(s.Writer, "\033[%dD", n)
 	}
 	s.lastOutput = ""
 }
