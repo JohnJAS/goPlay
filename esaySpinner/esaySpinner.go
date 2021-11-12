@@ -30,10 +30,10 @@ type Options struct {
 }
 
 // New provides a pointer to an instance of Spinner with the supplied options.
-func New(cs []string, d time.Duration, io io.Writer, options ...Option) *Spinner {
+func New(cs []string, m *sync.RWMutex, d time.Duration, io io.Writer, options ...Option) *Spinner {
 	s := &Spinner{
 		chars:    cs,
-		mu:       &sync.RWMutex{},
+		mu:       m,
 		active:   false,
 		stopChan: make(chan struct{}, 1),
 	}
@@ -122,12 +122,10 @@ func (s *Spinner) Start() {
 						return
 					}
 					s.erase()
-
 					outPlain := fmt.Sprintf("%s", s.chars[i])
 					s.lastOutput = s.chars[i]
 					fmt.Fprint(s.Writer, outPlain)
 					delay := s.Delay
-
 					s.mu.Unlock()
 					time.Sleep(delay)
 				}
