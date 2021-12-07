@@ -591,8 +591,12 @@ func CertificateRequestText(csr *x509.CertificateRequest) (string, error) {
 }
 
 func main() {
-	address := os.Args[1]
-	customCAPath := os.Args[2]
+	var address, customCAPath string
+	var err error
+	address = os.Args[1]
+	if len(os.Args) > 2 {
+		customCAPath = os.Args[2]
+	}
 
 	arr := strings.Split(address, ":")
 	if len(arr) != 2 {
@@ -610,12 +614,17 @@ func main() {
 		ServerName: server,
 	}
 
+	//Both certFiles and certDirectories can be overridden with environment variables (SSL_CERT_FILE and SSL_CERT_DIR, respectively)
 	if customCAPath != "" {
-		certs := x509.NewCertPool()
-		customCAPem, _ := ioutil.ReadFile(customCAPath)
-		certs.AppendCertsFromPEM(customCAPem)
-		//Both certFiles and certDirectories can be overridden with environment variables (SSL_CERT_FILE and SSL_CERT_DIR, respectively)
-		tlsConfig.RootCAs = certs
+		customCAPem, err := ioutil.ReadFile(customCAPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tlsConfig.RootCAs, err = x509.SystemCertPool()
+		if err != nil {
+			log.Fatal(err)
+		}
+		tlsConfig.RootCAs.AppendCertsFromPEM(customCAPem)
 	}
 
 	client := tls.Client(conn, tlsConfig)
@@ -626,50 +635,19 @@ func main() {
 	}
 
 	var pemBlock pem.Block
-	if customCAPath == "" {
-
-		cert := client.ConnectionState().PeerCertificates[len(client.ConnectionState().PeerCertificates)-1]
-
+	fmt.Println(len(client.ConnectionState().VerifiedChains))
+	certs := client.ConnectionState().VerifiedChains[len(client.ConnectionState().VerifiedChains)-1]
+	for _, cert := range certs {
 		if cert.IsCA {
-			//Print the full PEM certificate
 			pemBlock = pem.Block{
 				Type:  "CERTIFICATE",
 				Bytes: cert.Raw,
 			}
+			pemStream := pem.EncodeToMemory(&pemBlock)
 			fmt.Println(CertificateText(cert))
-
-		} else {
-			for index, subCert := range tlsConfig.RootCAs.Subjects() {
-				fmt.Println(index)
-				subCertPool := x509.NewCertPool()
-				ok := subCertPool.AppendCertsFromPEM(subCert)
-				if !ok {
-					log.Fatal("failed to add subcert")
-				}
-				subClient := tls.Client(conn, &tls.Config{
-					ServerName: server,
-					RootCAs:    tlsConfig.RootCAs,
-				})
-				if err := subClient.Handshake(); err != nil {
-					log.Fatal(err)
-					subClient.Close()
-					continue
-				} else {
-					subClient.Close()
-					//Print the full PEM certificate
-					pemBlock = pem.Block{
-						Type:  "CERTIFICATE",
-						Bytes: subCert,
-					}
-					break
-				}
-			}
-
+			fmt.Println(string(pemStream))
+			ioutil.WriteFile("registry_ca.crt", pemStream, 0400)
 		}
-
-		pemStream := pem.EncodeToMemory(&pemBlock)
-		fmt.Println(string(pemStream))
-		ioutil.WriteFile("serverCA.crt", pemStream, 0400)
 
 	}
 }
