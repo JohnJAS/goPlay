@@ -5,19 +5,13 @@ import (
 	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"math/big"
 	"net"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -590,64 +584,23 @@ func CertificateRequestText(csr *x509.CertificateRequest) (string, error) {
 	return buf.String(), nil
 }
 
-func main() {
-	var address, customCAPath string
-	var err error
-	address = os.Args[1]
-	if len(os.Args) > 2 {
-		customCAPath = os.Args[2]
-	}
-
-	arr := strings.Split(address, ":")
-	if len(arr) != 2 {
-		log.Fatal("invalid address format")
-	}
-	server := arr[0]
-	//port := arr[1]
-
-	conn, err := net.Dial("tcp", address)
+// GetLocalIP returns the non loopback local IP of the host
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		log.Fatal(err)
+		return ""
 	}
-
-	tlsConfig := &tls.Config{
-		ServerName: server,
-	}
-
-	//Both certFiles and certDirectories can be overridden with environment variables (SSL_CERT_FILE and SSL_CERT_DIR, respectively)
-	if customCAPath != "" {
-		customCAPem, err := ioutil.ReadFile(customCAPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		tlsConfig.RootCAs, err = x509.SystemCertPool()
-		if err != nil {
-			log.Fatal(err)
-		}
-		tlsConfig.RootCAs.AppendCertsFromPEM(customCAPem)
-	}
-
-	client := tls.Client(conn, tlsConfig)
-	defer client.Close()
-
-	if err := client.Handshake(); err != nil {
-		log.Fatal(err)
-	}
-
-	var pemBlock pem.Block
-	fmt.Println(len(client.ConnectionState().VerifiedChains))
-	certs := client.ConnectionState().VerifiedChains[len(client.ConnectionState().VerifiedChains)-1]
-	for _, cert := range certs {
-		if cert.IsCA {
-			pemBlock = pem.Block{
-				Type:  "CERTIFICATE",
-				Bytes: cert.Raw,
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				fmt.Println(ipnet.IP.String())
 			}
-			pemStream := pem.EncodeToMemory(&pemBlock)
-			fmt.Println(CertificateText(cert))
-			fmt.Println(string(pemStream))
-			ioutil.WriteFile("registry_ca.crt", pemStream, 0400)
 		}
-
 	}
+	return ""
+}
+
+func main() {
+	GetLocalIP()
 }
