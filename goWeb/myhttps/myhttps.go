@@ -2,7 +2,6 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"net/http"
 )
 
@@ -16,25 +15,12 @@ type PageData struct {
 	Todos     []Todo
 }
 
-// An HTML template
-const tmpl = `
-    <h1>{{.PageTitle}}</h1>
-    <ul>
-        {{range .Todos}}
-            {{if .Done}}
-                <li>{{.Title}} &#10004</li>
-            {{else}}
-                <li>{{.Title}}</li>
-            {{end}}
-        {{end}}
-    </ul>`
-
 func main() {
 
 	// Make and parse the HTML template
-	t, err := template.New("webpage").Parse(tmpl)
+	t, err := template.ParseFiles("todo.gohtml")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// Initialze a struct storing page data and todo data
