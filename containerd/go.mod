@@ -1,4 +1,4 @@
-module playground
+module containerd
 
 go 1.16
 
