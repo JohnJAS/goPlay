@@ -1,4 +1,4 @@
-module playground
+module server
 
 go 1.19
 

@@ -1,4 +1,4 @@
-module playground
+module portable
 
 go 1.19
 
