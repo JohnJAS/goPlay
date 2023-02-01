@@ -5,13 +5,18 @@ import (
 	"context"
 	"fmt"
 	gogpt "github.com/sashabaranov/go-gpt3"
+	"log"
 	"os"
 )
 
 const API_KEY = "API_KEY"
 
 func main() {
-	c := gogpt.NewClient(os.Getenv(API_KEY))
+	key := os.Getenv(API_KEY)
+	if key == ""{
+		log.Fatalf("failed to find %v", API_KEY)
+	}
+	c := gogpt.NewClient(key)
 	ctx := context.Background()
 
 	for {
@@ -30,6 +35,7 @@ func main() {
 
 		resp, err := c.CreateCompletion(ctx, req)
 		if err != nil {
+			log.Printf("failed to get response: %v", err)
 			return
 		}
 		fmt.Printf("AI: ")
